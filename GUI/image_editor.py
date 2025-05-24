@@ -95,7 +95,7 @@ class HistogramNode(Node):
         )
         with dpg.child_window(parent=self.image_attribute, width=200, height=200):
             # TODO: Make this a graph (RGB)
-            with dpg.plot(height=-1, width=-1, no_inputs=True):
+            with dpg.plot(height=-1, width=-1):
                 dpg.add_plot_legend()
                 dpg.add_plot_axis(dpg.mvXAxis, label="Value", no_label=True)
                 dpg.add_plot_axis(
@@ -135,7 +135,6 @@ class HistogramNode(Node):
         logger.debug("Initialised histogram node")
 
     def process(self):
-        # TODO: Imaplement this
         edge = self.input_attributes[self.image_attribute][0]
         image: Image = edge.data
         histogram = Application.get_histogram(image.raw_image)
@@ -271,9 +270,11 @@ class EditingWindow:
 
         if len(sorted_list) + len(dropped) != len(self.adjacency_list):
             logger.error("There is a cycle in your graph!!!")
-            return False
+            return []
         else:
             return sorted_list
 
     def evaluate(self):
         sorted_node_list = self.topological_sort()
+        for node in sorted_node_list:
+            node.process()
