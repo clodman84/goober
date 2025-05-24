@@ -1,6 +1,7 @@
 import itertools
 import logging
 from abc import ABC, abstractmethod
+from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -196,6 +197,7 @@ class EditingWindow:
                     )
                 with dpg.menu(label="Import"):
                     dpg.add_menu_item(label="Image", callback=self.add_image_node)
+                dpg.add_button(label="Evaluate", callback=self.evaluate)
             with dpg.node_editor(
                 callback=self.link, delink_callback=self.delink, minimap=True
             ) as self.node_editor:
@@ -205,8 +207,8 @@ class EditingWindow:
         id = dpg.add_node_link(app_data[0], app_data[1], parent=sender)
         logger.debug(self.node_lookup_by_attribute_id)
 
-        input = self.node_lookup_by_attribute_id[app_data[0]]
-        output = self.node_lookup_by_attribute_id[app_data[1]]
+        input: Node = self.node_lookup_by_attribute_id[app_data[0]]
+        output: Node = self.node_lookup_by_attribute_id[app_data[1]]
 
         edge = Edge(id, None, input, output, app_data[0], app_data[1])
         self.edge_lookup_by_edge_id[id] = edge
@@ -215,7 +217,6 @@ class EditingWindow:
         edge.connect()
 
     def delink(self, sender, app_data):
-        # TODO: implement node deletion
         edge = self.edge_lookup_by_edge_id[app_data]
         edge.disconnect()
         self.adjacency_list[edge.input].remove(edge.output)
@@ -236,12 +237,43 @@ class EditingWindow:
         self.add_node(node)
 
     def topological_sort(self):
-        pass
+        # kahn's algo
+        sorted_list = []
+
+        in_degree = defaultdict(int)
+        for node in self.adjacency_list:
+            for neighbour in self.adjacency_list[node]:
+                in_degree[neighbour] += 1
+
+        logger.debug(f"Computed in_degree: {in_degree}")
+        queue = [node for node in self.adjacency_list if in_degree[node] == 0]
+        dropped = set()
+
+        logger.debug(f"Source node queue: {queue}")
+        # if a node is completely disconnected, we do not give a shit about it
+        for node in self.adjacency_list:
+            if not self.adjacency_list[node] and not in_degree[node]:
+                dropped.add(node)
+
+        while queue:
+            node = queue.pop()
+            if node in dropped:
+                continue
+            sorted_list.append(node)
+            logger.debug(f"{node}, adjecency - {self.adjacency_list[node]}")
+            for neighbour in self.adjacency_list[node]:
+                in_degree[neighbour] -= 1
+                if in_degree[neighbour] == 0:
+                    queue.append(neighbour)
+
+        logger.debug(f"Dropped nodes: {dropped}")
+        logger.debug(f"Sorted list: {sorted_list}")
+
+        if len(sorted_list) + len(dropped) != len(self.adjacency_list):
+            logger.error("There is a cycle in your graph!!!")
+            return False
+        else:
+            return sorted_list
 
     def evaluate(self):
-        # TODO: there are two ways of doing this
-        # 1. perform a topological sort and evaluate nodes
-        # 2. start from the ending nodes and evaluate edges recursively
-
-        # TODO: CHECK FOR CYCLES WHILE YOU ARE AT IT, if we are gonna check for cycles anyways, might as well sort it tbh
-        pass
+        sorted_node_list = self.topological_sort()
