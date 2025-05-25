@@ -36,6 +36,7 @@ class Edge:
         dpg.delete_item(self.id)
 
     def disconnect(self):
+        # DO NOT CHANGE THE ORDER IN WHICH THESE FUNCTIONS ARE CALLED
         self.input.remove_output(self, self.input_attribute_id)
         self.output.remove_input(self, self.output_attribute_id)
         dpg.delete_item(self.id)
@@ -86,10 +87,10 @@ class Node(ABC):
 
     def remove_input(self, edge: Edge, attribute_id):
         self.input_attributes[attribute_id].remove(edge)
-        self.update_hook()
 
     def remove_output(self, edge: Edge, attribute_id):
         self.output_attributes[attribute_id].remove(edge)
+        self.update_hook()
 
     def validate_input(self, edge, attribute_id) -> bool:
         return True
@@ -210,25 +211,54 @@ class ImageNode(Node):
             logger.debug(f"Populated edge {edge.id} with image from {self.id}")
 
 
+@functools.cache
+def get_default_image():
+    return Image.frompath(Path(f"./Data/default.jpg"), (600, 600), (200, 200))
+
+
 class PreviewNode(Node):
     def __init__(
         self, label: str, parent: str | int, update_hook: Callable = lambda: None
     ):
         super().__init__(label, parent, update_hook)
+        self.image: Image = get_default_image()
         with dpg.texture_registry():
             dpg.add_dynamic_texture(
                 200,
                 200,
-                default_value=image.thumbnail[3],
+                default_value=self.image.thumbnail[3],
                 tag=f"{self.id}_image",
             )
             logger.debug("Added entry to texture_registry")
         self.image_attribute = self.add_attribute(
-            label="Image", attribute_type=dpg.mvNode_Attr_Output
+            label="Image", attribute_type=dpg.mvNode_Attr_Input
         )
+        self.image_output_attribute = self.add_attribute(
+            label="Out", attribute_type=dpg.mvNode_Attr_Output
+        )
+
         with dpg.child_window(width=200, height=200, parent=self.image_attribute):
             dpg.add_image(f"{self.id}_image")
             logger.debug("Added image to node")
+
+    def validate_input(self, edge, attribute_id) -> bool:
+        # only permitting a single connection
+        if self.input_attributes[self.image_attribute]:
+            logger.warning(
+                "Invalid! You can only connect one image node to preview node"
+            )
+            return False
+        return True
+
+    def process(self):
+        if self.input_attributes[self.image_attribute]:
+            edge = self.input_attributes[self.image_attribute][0]
+            self.image: Image = edge.data
+
+        dpg.set_value(f"{self.id}_image", self.image.thumbnail[3])
+        for edge in self.output_attributes[self.image_output_attribute]:
+            edge.data = self.image
+            logger.debug(f"Populated edge {edge.id} with image from {self.id}")
 
 
 class EditingWindow:
@@ -246,6 +276,7 @@ class EditingWindow:
                     dpg.add_menu_item(
                         label="Histogram", callback=self.add_histogram_node
                     )
+                    dpg.add_menu_item(label="Preview", callback=self.add_preview_node)
                 with dpg.menu(label="Import"):
                     dpg.add_menu_item(label="Image", callback=self.add_image_node)
                 dpg.add_button(label="Evaluate", callback=self.evaluate)
@@ -279,6 +310,12 @@ class EditingWindow:
     def add_histogram_node(self):
         node = HistogramNode(
             label="Histogram", parent=self.node_editor, update_hook=self.evaluate
+        )
+        self.add_node(node)
+
+    def add_preview_node(self):
+        node = PreviewNode(
+            label="Preview", parent=self.node_editor, update_hook=self.evaluate
         )
         self.add_node(node)
 
