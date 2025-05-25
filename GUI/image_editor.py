@@ -1,10 +1,11 @@
+import functools
 import itertools
 import logging
 from abc import ABC, abstractmethod
 from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 import dearpygui.dearpygui as dpg
 
@@ -31,7 +32,7 @@ class Edge:
             self.output.add_input(self, self.output_attribute_id)
             logger.debug(f"Connected {self.input} to {self.output} via {self}")
             return
-        logger.debug(f"Failed to connect {self.input} to {self.output} via {self}")
+        logger.warning(f"Failed to connect {self.input} to {self.output} via {self}")
         dpg.delete_item(self.id)
 
     def disconnect(self):
@@ -41,18 +42,26 @@ class Edge:
 
 
 class Node(ABC):
-    def __init__(self, label: str, parent: str | int):
+    """
+    Node do the processing, Edges store the data
+    """
+
+    def __init__(
+        self, label: str, parent: str | int, update_hook: Callable = lambda: None
+    ):
         self.id = dpg.add_node(label=label, parent=parent)
         self.label = label
         self.parent = parent
         self.input_attributes: dict[str | int, list[Edge]] = {}
         self.output_attributes: dict[str | int, list[Edge]] = {}
+        self.update_hook = update_hook
 
     @abstractmethod
     def process(self):
         """
         It's only job is to populate all output edges
         """
+        # TODO: Implement some form of cache
         pass
 
     def add_attribute(self, label, attribute_type):
@@ -70,12 +79,14 @@ class Node(ABC):
 
     def add_input(self, edge: Edge, attribute_id):
         self.input_attributes[attribute_id].append(edge)
+        self.update_hook()
 
     def add_output(self, edge: Edge, attribute_id):
         self.output_attributes[attribute_id].append(edge)
 
     def remove_input(self, edge: Edge, attribute_id):
         self.input_attributes[attribute_id].remove(edge)
+        self.update_hook()
 
     def remove_output(self, edge: Edge, attribute_id):
         self.output_attributes[attribute_id].remove(edge)
@@ -87,14 +98,27 @@ class Node(ABC):
         return True
 
 
+@functools.cache
+def set_up_line_plot_themes():
+    with dpg.theme() as r:
+        with dpg.theme_component(dpg.mvThemeCat_Plots):
+            dpg.add_theme_color(dpg.mvPlotCol_Line, value=(255, 0, 0, 0))
+    with dpg.theme() as g:
+        with dpg.theme_component(dpg.mvThemeCat_Plots):
+            dpg.add_theme_color(dpg.mvPlotCol_Line, value=(0, 255, 0, 0))
+    with dpg.theme() as b:
+        with dpg.theme_component(dpg.mvThemeCat_Plots):
+            dpg.add_theme_color(dpg.mvPlotCol_Line, value=(0, 0, 255, 0))
+    return r, g, b
+
+
 class HistogramNode(Node):
-    def __init__(self, label: str, parent: str | int):
-        super().__init__(label, parent)
+    def __init__(self, label: str, parent: str | int, update_hook: Callable):
+        super().__init__(label, parent, update_hook=update_hook)
         self.image_attribute = self.add_attribute(
             label="Image", attribute_type=dpg.mvNode_Attr_Input
         )
         with dpg.child_window(parent=self.image_attribute, width=200, height=200):
-            # TODO: Make this a graph (RGB)
             with dpg.plot(height=-1, width=-1):
                 dpg.add_plot_legend()
                 dpg.add_plot_axis(dpg.mvXAxis, label="Value", no_label=True)
@@ -104,7 +128,9 @@ class HistogramNode(Node):
                     tag=f"{self.id}_yaxis",
                     no_label=True,
                     auto_fit=True,
+                    no_tick_labels=True,
                 )
+                r, g, b = set_up_line_plot_themes()
                 dpg.add_line_series(
                     [i for i in range(256)],
                     [
@@ -132,6 +158,9 @@ class HistogramNode(Node):
                     tag=f"{self.id}_B",
                     parent=f"{self.id}_yaxis",
                 )
+                dpg.bind_item_theme(f"{self.id}_R", r)
+                dpg.bind_item_theme(f"{self.id}_G", g)
+                dpg.bind_item_theme(f"{self.id}_B", b)
         logger.debug("Initialised histogram node")
 
     def process(self):
@@ -154,8 +183,10 @@ class HistogramNode(Node):
 
 
 class ImageNode(Node):
-    def __init__(self, label: str, parent: str | int, image: Image):
-        super().__init__(label, parent)
+    def __init__(
+        self, label: str, parent: str | int, image: Image, update_hook: Callable
+    ):
+        super().__init__(label, parent, update_hook=update_hook)
         self.image = image
         with dpg.texture_registry():
             dpg.add_dynamic_texture(
@@ -177,6 +208,27 @@ class ImageNode(Node):
         for edge in self.output_attributes[self.image_attribute]:
             edge.data = self.image
             logger.debug(f"Populated edge {edge.id} with image from {self.id}")
+
+
+class PreviewNode(Node):
+    def __init__(
+        self, label: str, parent: str | int, update_hook: Callable = lambda: None
+    ):
+        super().__init__(label, parent, update_hook)
+        with dpg.texture_registry():
+            dpg.add_dynamic_texture(
+                200,
+                200,
+                default_value=image.thumbnail[3],
+                tag=f"{self.id}_image",
+            )
+            logger.debug("Added entry to texture_registry")
+        self.image_attribute = self.add_attribute(
+            label="Image", attribute_type=dpg.mvNode_Attr_Output
+        )
+        with dpg.child_window(width=200, height=200, parent=self.image_attribute):
+            dpg.add_image(f"{self.id}_image")
+            logger.debug("Added image to node")
 
 
 class EditingWindow:
@@ -212,7 +264,6 @@ class EditingWindow:
         edge = Edge(id, None, input, output, app_data[0], app_data[1])
         self.edge_lookup_by_edge_id[id] = edge
         self.adjacency_list[input].append(output)
-        # TODO: Implement adjacency list
         edge.connect()
 
     def delink(self, sender, app_data):
@@ -226,17 +277,26 @@ class EditingWindow:
         self.adjacency_list[node] = []
 
     def add_histogram_node(self):
-        node = HistogramNode(label="Histogram", parent=self.node_editor)
+        node = HistogramNode(
+            label="Histogram", parent=self.node_editor, update_hook=self.evaluate
+        )
         self.add_node(node)
 
     def add_image_node(self):
         node = ImageNode(
-            label="Image", parent=self.node_editor, image=self.image_manager.load(0)
+            label="Image",
+            parent=self.node_editor,
+            image=self.image_manager.load(0),
+            update_hook=self.evaluate,
         )
         self.add_node(node)
 
     def topological_sort(self):
-        # kahn's algo
+        """
+        Get a list of nodes to process in the correct order.
+        (A will not be before B if the output of B is required for A)
+        """
+        # kahn's algo: https://en.wikipedia.org/wiki/Topological_sorting
         sorted_list = []
 
         in_degree = defaultdict(int)
@@ -244,11 +304,9 @@ class EditingWindow:
             for neighbour in self.adjacency_list[node]:
                 in_degree[neighbour] += 1
 
-        logger.debug(f"Computed in_degree: {in_degree}")
         queue = [node for node in self.adjacency_list if in_degree[node] == 0]
         dropped = set()
 
-        logger.debug(f"Source node queue: {queue}")
         # if a node is completely disconnected, we do not give a shit about it
         for node in self.adjacency_list:
             if not self.adjacency_list[node] and not in_degree[node]:
@@ -266,7 +324,7 @@ class EditingWindow:
                     queue.append(neighbour)
 
         logger.debug(f"Dropped nodes: {dropped}")
-        logger.debug(f"Sorted list: {sorted_list}")
+        logger.debug(f"Execution order: {sorted_list}")
 
         if len(sorted_list) + len(dropped) != len(self.adjacency_list):
             logger.error("There is a cycle in your graph!!!")
@@ -275,6 +333,7 @@ class EditingWindow:
             return sorted_list
 
     def evaluate(self):
+        # TODO: parallelism???? Set up a process pool of some sort and greedily consume items from the sorted_node_list
         sorted_node_list = self.topological_sort()
         for node in sorted_node_list:
             node.process()
