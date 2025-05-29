@@ -12,6 +12,7 @@ from typing import Literal, Tuple
 import numpy as np
 import PIL.Image as PImage
 import PIL.ImageOps as PImageOps
+from PIL.ImagePalette import raw
 
 from .utils import ShittyMultiThreading
 
@@ -108,6 +109,29 @@ class Image:
         """Makes an Image object by querying the DoPy server"""
         # TODO: creation of the scaled dpg texture and thumbnails should ideally take place on the server.
         raise NotImplemented
+
+    @classmethod
+    def from_raw_image(
+        cls, image: PImage.Image, thumbnail_dimensions, main_image_dimensions
+    ):
+        image.putalpha(255)
+        thumbnail = PImageOps.pad(image, thumbnail_dimensions, color="#000000")
+        dpg_texture = PImageOps.pad(image, main_image_dimensions, color="#000000")
+        # dpg_texture-ifying
+        channels = len(thumbnail.getbands())
+        thumbnail = (
+            *thumbnail_dimensions,
+            channels,
+            np.frombuffer(thumbnail.tobytes(), dtype=np.uint8) / 255.0,
+        )
+        dpg_texture = (
+            *main_image_dimensions,
+            channels,
+            np.frombuffer(dpg_texture.tobytes(), dtype=np.uint8) / 255.0,
+        )
+        raw_image = image
+        logger.debug(f"Updated image")
+        return Image("N/A", raw_image, dpg_texture, thumbnail)
 
 
 class ImageManager:

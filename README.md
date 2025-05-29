@@ -1,1 +1,3 @@
-did you expect a well written and thought out README?
+# Blender's Procedural Nodes but for images
+
+the interesting bit is in GUI/image_editor.py

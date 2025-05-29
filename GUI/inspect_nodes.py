@@ -1,0 +1,158 @@
+import functools
+import logging
+from pathlib import Path
+from typing import Callable
+
+import dearpygui.dearpygui as dpg
+
+import Core
+from Core import Image
+
+from .graph_abc import Node
+
+logger = logging.getLogger("GUI.InspectNodes")
+
+
+@functools.cache
+def set_up_line_plot_themes():
+    with dpg.theme() as r:
+        with dpg.theme_component(dpg.mvAll):
+            dpg.add_theme_color(
+                dpg.mvPlotCol_Line, value=(255, 0, 0), category=dpg.mvThemeCat_Plots
+            )
+    with dpg.theme() as g:
+        with dpg.theme_component(dpg.mvAll):
+            dpg.add_theme_color(
+                dpg.mvPlotCol_Line, value=(0, 255, 0), category=dpg.mvThemeCat_Plots
+            )
+    with dpg.theme() as b:
+        with dpg.theme_component(dpg.mvAll):
+            dpg.add_theme_color(
+                dpg.mvPlotCol_Line, value=(0, 0, 255), category=dpg.mvThemeCat_Plots
+            )
+    return r, g, b
+
+
+class HistogramNode(Node):
+    def __init__(self, label: str, parent: str | int, update_hook: Callable):
+        super().__init__(label, parent, update_hook=update_hook)
+        self.image_attribute = self.add_attribute(
+            label="Image", attribute_type=dpg.mvNode_Attr_Input
+        )
+        with dpg.child_window(parent=self.image_attribute, width=200, height=200):
+            with dpg.plot(height=-1, width=-1):
+                dpg.add_plot_axis(dpg.mvXAxis, label="Value", no_label=True)
+                dpg.add_plot_axis(
+                    dpg.mvYAxis,
+                    label="Count",
+                    tag=f"{self.id}_yaxis",
+                    no_label=True,
+                    auto_fit=True,
+                    no_tick_labels=True,
+                )
+                r, g, b = set_up_line_plot_themes()
+                dpg.add_line_series(
+                    [i for i in range(256)],
+                    [
+                        0.0,
+                    ]
+                    * 256,
+                    tag=f"{self.id}_R",
+                    parent=f"{self.id}_yaxis",
+                    label="R",
+                )
+                dpg.add_line_series(
+                    [i for i in range(256)],
+                    [
+                        0.0,
+                    ]
+                    * 256,
+                    tag=f"{self.id}_G",
+                    parent=f"{self.id}_yaxis",
+                    label="G",
+                )
+                dpg.add_line_series(
+                    [i for i in range(256)],
+                    [
+                        0.0,
+                    ]
+                    * 256,
+                    tag=f"{self.id}_B",
+                    parent=f"{self.id}_yaxis",
+                    label="B",
+                )
+                dpg.bind_item_theme(f"{self.id}_R", r)
+                dpg.bind_item_theme(f"{self.id}_G", g)
+                dpg.bind_item_theme(f"{self.id}_B", b)
+                dpg.add_plot_legend()
+        logger.debug("Initialised histogram node")
+
+    def process(self):
+        edge = self.input_attributes[self.image_attribute][0]
+        if not edge:
+            return
+        image: Image = edge.data
+        histogram = Core.get_histogram(image.raw_image)
+        dpg.set_value(f"{self.id}_R", [[i for i in range(256)], histogram[0]])
+        dpg.set_value(f"{self.id}_G", [[i for i in range(256)], histogram[1]])
+        dpg.set_value(f"{self.id}_B", [[i for i in range(256)], histogram[2]])
+        logger.debug(f"Processed histogram in histogram node {self.id}")
+
+    def validate_input(self, edge, attribute_id) -> bool:
+        # only permitting a single connection
+        if self.input_attributes[self.image_attribute]:
+            logger.warning(
+                "Invalid! You can only connect one image node to histogram node"
+            )
+            return False
+        return True
+
+
+@functools.cache
+def get_default_image():
+    return Image.frompath(Path(f"./Data/default.jpg"), (600, 600), (200, 200))
+
+
+class PreviewNode(Node):
+    def __init__(
+        self, label: str, parent: str | int, update_hook: Callable = lambda: None
+    ):
+        super().__init__(label, parent, update_hook)
+        self.image: Image = get_default_image()
+        with dpg.texture_registry():
+            dpg.add_dynamic_texture(
+                200,
+                200,
+                default_value=self.image.thumbnail[3],
+                tag=f"{self.id}_image",
+            )
+            logger.debug("Added entry to texture_registry")
+        self.image_attribute = self.add_attribute(
+            label="Image", attribute_type=dpg.mvNode_Attr_Input
+        )
+        self.image_output_attribute = self.add_attribute(
+            label="Out", attribute_type=dpg.mvNode_Attr_Output
+        )
+
+        with dpg.child_window(width=200, height=200, parent=self.image_attribute):
+            dpg.add_image(f"{self.id}_image")
+            logger.debug("Added default image to preview node")
+
+    def validate_input(self, edge, attribute_id) -> bool:
+        # only permitting a single connection
+        if self.input_attributes[self.image_attribute]:
+            logger.warning(
+                "Invalid! You can only connect one image node to preview node"
+            )
+            return False
+        return True
+
+    def process(self):
+        if self.input_attributes[self.image_attribute]:
+            edge = self.input_attributes[self.image_attribute][0]
+            self.image: Image = edge.data
+
+        dpg.set_value(f"{self.id}_image", self.image.thumbnail[3])
+        for edge in self.output_attributes[self.image_output_attribute]:
+            edge.data = self.image
+            logger.debug(f"Populated edge {edge.id} with image from {self.id}")

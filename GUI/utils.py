@@ -4,7 +4,7 @@ import threading
 
 import dearpygui.dearpygui as dpg
 
-from Application.utils import Singleton
+from Core.utils import Singleton
 
 MODAL_HIDDEN_LIST = []
 

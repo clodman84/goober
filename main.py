@@ -4,7 +4,7 @@ from pathlib import Path
 import dearpygui.dearpygui as dpg
 from dearpygui import demo
 
-import Application
+import Core
 import GUI
 
 logger = logging.getLogger("Core.Main")
