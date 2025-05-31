@@ -1,8 +1,8 @@
-import copy
 import logging
 from typing import Callable
 
 import dearpygui.dearpygui as dpg
+from line_profiler import profile
 from PIL import ImageEnhance
 
 from Core import Image
@@ -30,7 +30,7 @@ class EnhanceNode(Node):
         )
         with dpg.child_window(parent=self.image_attribute, width=100, height=30):
             self.slider = dpg.add_input_float(
-                default_value=default_value, callback=self.update_hook
+                default_value=default_value, callback=self.update
             )
         self.enhancement = enhancement
 
@@ -43,15 +43,16 @@ class EnhanceNode(Node):
             return False
         return True
 
+    @profile
     def process(self):
         if self.input_attributes[self.image_attribute]:
             edge = self.input_attributes[self.image_attribute][0]
             image: Image = edge.data
-            enhancer = self.enhancement(copy.deepcopy(image.raw_image))
+            enhancer = self.enhancement(image.raw_image)
             factor = dpg.get_value(self.slider)
             updated_image = enhancer.enhance(factor=factor)
 
-            image = Image.from_raw_image(updated_image, (200, 200), (600, 600))
+            image = Image("NA", updated_image, (600, 600), (200, 200))
 
             for edge in self.output_attributes[self.image_output_attribute]:
                 edge.data = image

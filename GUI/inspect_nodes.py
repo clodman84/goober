@@ -87,9 +87,11 @@ class HistogramNode(Node):
                 dpg.add_plot_legend()
         logger.debug("Initialised histogram node")
 
-    def process(self):
+    def process(self, is_final=True):
+        if not self.input_attributes[self.image_attribute]:
+            return
         edge = self.input_attributes[self.image_attribute][0]
-        if not edge:
+        if not edge.data:
             return
         image: Image = edge.data
         histogram = Core.get_histogram(image.raw_image)
@@ -118,24 +120,18 @@ class PreviewNode(Node):
         self, label: str, parent: str | int, update_hook: Callable = lambda: None
     ):
         super().__init__(label, parent, update_hook)
-        self.image: Image = get_default_image()
-        with dpg.texture_registry():
-            dpg.add_dynamic_texture(
-                200,
-                200,
-                default_value=self.image.thumbnail[3],
-                tag=f"{self.id}_image",
-            )
-            logger.debug("Added entry to texture_registry")
+        self.image: Image = get_default_image().get_scaled_image()
         self.image_attribute = self.add_attribute(
             label="Image", attribute_type=dpg.mvNode_Attr_Input
         )
         self.image_output_attribute = self.add_attribute(
             label="Out", attribute_type=dpg.mvNode_Attr_Output
         )
-
-        with dpg.child_window(width=200, height=200, parent=self.image_attribute):
-            dpg.add_image(f"{self.id}_image")
+        with dpg.child_window(width=400, height=300, parent=self.image_attribute):
+            with dpg.plot(no_frame=True):
+                self.xaxis = dpg.add_plot_axis(dpg.mvXAxis, no_tick_labels=True)
+                with dpg.plot_axis(dpg.mvYAxis, no_tick_labels=True) as self.yaxis:
+                    self.register_and_show_image(self.image, self.yaxis)
             logger.debug("Added default image to preview node")
 
     def validate_input(self, edge, attribute_id) -> bool:
@@ -147,12 +143,38 @@ class PreviewNode(Node):
             return False
         return True
 
-    def process(self):
+    def register_and_show_image(self, image: Image, parent: str | int):
+        # remember to delete any pre_existing image_series and textures
+        with dpg.texture_registry():
+            size = image.raw_image.size
+            dpg.add_dynamic_texture(
+                *size,
+                default_value=image.dpg_raw,
+                tag=f"{self.id}_image",
+            )
+        logger.debug("Added entry to texture_registry")
+        dpg.add_image_series(
+            f"{self.id}_image",
+            [0, 0],
+            image.raw_image.size,
+            parent=parent,
+            tag=f"{self.id}_image_series",
+        )
+        dpg.fit_axis_data(self.xaxis)
+        dpg.fit_axis_data(self.yaxis)
+
+    def process(self, is_final=False):
         if self.input_attributes[self.image_attribute]:
             edge = self.input_attributes[self.image_attribute][0]
-            self.image: Image = edge.data
+            image: Image = edge.data
+            if self.image.raw_image.size != image.raw_image.size:
+                dpg.delete_item(f"{self.id}_image")
+                dpg.delete_item(f"{self.id}_image_series")
+                self.register_and_show_image(image, parent=self.yaxis)
+            else:
+                dpg.set_value(f"{self.id}_image", image.dpg_raw)
 
-        dpg.set_value(f"{self.id}_image", self.image.thumbnail[3])
-        for edge in self.output_attributes[self.image_output_attribute]:
-            edge.data = self.image
-            logger.debug(f"Populated edge {edge.id} with image from {self.id}")
+            self.image = image
+            for edge in self.output_attributes[self.image_output_attribute]:
+                edge.data = self.image
+                logger.debug(f"Populated edge {edge.id} with image from {self.id}")

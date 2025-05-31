@@ -20,7 +20,7 @@ class ImageNode(Node):
             dpg.add_dynamic_texture(
                 200,
                 200,
-                default_value=image.thumbnail[3],
+                default_value=image.thumbnail,
                 tag=f"{self.id}_image",
             )
             logger.debug("Added entry to texture_registry")
@@ -31,8 +31,8 @@ class ImageNode(Node):
             dpg.add_image(f"{self.id}_image")
             logger.debug("Added image to node")
 
-    def process(self):
+    def process(self, is_final=False):
         # put the image in all connected output edges
         for edge in self.output_attributes[self.image_attribute]:
-            edge.data = self.image
+            edge.data = self.image if is_final else self.image.get_scaled_image()
             logger.debug(f"Populated edge {edge.id} with image from {self.id}")

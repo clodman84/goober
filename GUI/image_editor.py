@@ -4,6 +4,7 @@ from collections import defaultdict
 from pathlib import Path
 
 import dearpygui.dearpygui as dpg
+from line_profiler import profile
 
 from Core import ImageManager
 
@@ -116,8 +117,7 @@ class EditingWindow:
         Get a list of nodes to process in the correct order.
         (A will not be before B if the output of B is required for A)
         """
-        # kahn's algo: https://en.wikipedia.org/wiki/Topological_sorting
-        sorted_list = []
+        # this is a modified kahn's algo: https://en.wikipedia.org/wiki/Topological_sorting
 
         in_degree = defaultdict(int)
         for node in self.adjacency_list:
@@ -125,18 +125,13 @@ class EditingWindow:
                 in_degree[neighbour] += 1
 
         queue = [node for node in self.adjacency_list if in_degree[node] == 0]
-        dropped = set()
-
-        # if a node is completely disconnected, we do not give a shit about it
-        for node in self.adjacency_list:
-            if not self.adjacency_list[node] and not in_degree[node]:
-                dropped.add(node)
+        dropped = [node for node in self.adjacency_list if node.state == 0]
+        sorted_list = []
 
         while queue:
             node = queue.pop()
-            if node in dropped:
-                continue
-            sorted_list.append(node)
+            if node.state == 1:
+                sorted_list.append(node)
             logger.debug(f"{node}, adjecency - {self.adjacency_list[node]}")
             for neighbour in self.adjacency_list[node]:
                 in_degree[neighbour] -= 1
@@ -157,3 +152,5 @@ class EditingWindow:
         sorted_node_list = self.topological_sort()
         for node in sorted_node_list:
             node.process()
+            node.state = 0
+            logger.debug(f"{node} state changed to 0")

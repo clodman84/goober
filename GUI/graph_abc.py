@@ -1,7 +1,7 @@
 import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Any, Callable
+from typing import Any, Callable, Literal
 
 import dearpygui.dearpygui as dpg
 
@@ -49,14 +49,14 @@ class Node(ABC):
         self.input_attributes: dict[str | int, list[Edge]] = {}
         self.output_attributes: dict[str | int, list[Edge]] = {}
         self.update_hook = update_hook
+        self.state: Literal[0, 1] = 0
 
     @abstractmethod
-    def process(self):
+    def process(self, is_final=False):
         """
         It's only job is to populate all output edges
         """
         # TODO: Implement some form of cache
-        pass
 
     def add_attribute(self, label, attribute_type):
         attribute_id = dpg.add_node_attribute(
@@ -73,17 +73,30 @@ class Node(ABC):
 
     def add_input(self, edge: Edge, attribute_id):
         self.input_attributes[attribute_id].append(edge)
-        self.update_hook()
+        self.update()
 
     def add_output(self, edge: Edge, attribute_id):
+        self.activate()
         self.output_attributes[attribute_id].append(edge)
 
     def remove_input(self, edge: Edge, attribute_id):
+        self.activate()
         self.input_attributes[attribute_id].remove(edge)
 
     def remove_output(self, edge: Edge, attribute_id):
         self.output_attributes[attribute_id].remove(edge)
+        self.update()
+
+    def update(self):
+        self.activate()
         self.update_hook()
+
+    def activate(self):
+        self.state = 1
+        logger.debug(f"{self} state changed to 1")
+        for attribute in self.output_attributes.values():
+            for edge in attribute:
+                edge.output.activate()
 
     def validate_input(self, edge, attribute_id) -> bool:
         return True
