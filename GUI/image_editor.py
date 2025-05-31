@@ -4,7 +4,6 @@ from collections import defaultdict
 from pathlib import Path
 
 import dearpygui.dearpygui as dpg
-from line_profiler import profile
 
 from Core import ImageManager
 
@@ -12,6 +11,7 @@ from .enhancement_nodes import Brightness, ColorBalance, Contrast, Sharpness
 from .graph_abc import Edge, Node
 from .image_nodes import ImageNode
 from .inspect_nodes import HistogramNode, PreviewNode
+from .manual_colour_balance import ManualColorBalance
 
 logger = logging.getLogger("GUI.Editor")
 
@@ -34,7 +34,7 @@ class EditingWindow:
                     dpg.add_menu_item(label="Preview", callback=self.add_preview_node)
                 with dpg.menu(label="Enhance"):
                     dpg.add_menu_item(
-                        label="Color Balance", callback=self.add_color_balance_node
+                        label="Colour Balance", callback=self.add_color_balance_node
                     )
                     dpg.add_menu_item(label="Contrast", callback=self.add_contrast_node)
                     dpg.add_menu_item(
@@ -42,6 +42,11 @@ class EditingWindow:
                     )
                     dpg.add_menu_item(
                         label="Sharpness", callback=self.add_sharpness_node
+                    )
+                with dpg.menu(label="Manual"):
+                    dpg.add_menu_item(
+                        label="Colour Balance",
+                        callback=self.add_manual_colour_balance_node,
                     )
 
                 with dpg.menu(label="Import"):
@@ -110,6 +115,14 @@ class EditingWindow:
 
     def add_sharpness_node(self):
         node = Sharpness(parent=self.node_editor, update_hook=self.evaluate)
+        self.add_node(node)
+
+    def add_manual_colour_balance_node(self):
+        node = ManualColorBalance(
+            label="Manual Colour Balance",
+            parent=self.node_editor,
+            update_hook=self.evaluate,
+        )
         self.add_node(node)
 
     def topological_sort(self):
