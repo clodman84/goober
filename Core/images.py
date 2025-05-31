@@ -5,21 +5,18 @@ This can be extended to receiving images from the DoPy server when it becomes a 
 
 import functools
 import logging
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal, Tuple
 
 import numpy as np
 import PIL.Image as PImage
 import PIL.ImageOps as PImageOps
-from PIL.ImagePalette import raw
 
 from .utils import ShittyMultiThreading
 
 logger = logging.getLogger("Core.Images")
 
 
-@dataclass
 class Image:
     """
     Dataclass that stores images that are served by the ImageManager. Dearpygui cannot display PImage.Image from Pillow
@@ -33,10 +30,45 @@ class Image:
         thumbnail: A scaled thumbnail that is shown in the preview displays, stored in a form that dearpygui accepts
     """
 
-    name: str
-    raw_image: PImage.Image
-    dpg_texture: Tuple[int, int, int, np.ndarray]
-    thumbnail: Tuple[int, int, int, np.ndarray]
+    def __init__(
+        self,
+        name: str,
+        raw_image: PImage.Image,
+        main_image_dimensions,
+        thumbnail_dimensions,
+    ) -> None:
+        self.name = name
+        self.raw_image = raw_image
+        self.raw_image.putalpha(255)
+        self.main_image_dimensions = main_image_dimensions
+        self.thumbnail_dimensions = thumbnail_dimensions
+
+    @functools.cached_property
+    def dpg_texture(self):
+        dpg_texture = PImageOps.pad(
+            self.raw_image, self.main_image_dimensions, color="#000000"
+        )
+        return np.frombuffer(dpg_texture.tobytes(), dtype=np.uint8) / 255.0
+
+    @functools.cached_property
+    def thumbnail(self):
+        thumbnail = PImageOps.pad(
+            self.raw_image, self.thumbnail_dimensions, color="#000000"
+        )
+        return np.frombuffer(thumbnail.tobytes(), dtype=np.uint8) / 255.0
+
+    @functools.cached_property
+    def dpg_raw(self):
+        return np.frombuffer(self.raw_image.tobytes(), dtype=np.uint8) / 255.0
+
+    @functools.cache
+    def get_scaled_image(self, factor=0.25):
+        return Image(
+            f"{self.name}_{factor:.2f}",
+            PImageOps.scale(self.raw_image, factor),
+            self.main_image_dimensions,
+            self.thumbnail_dimensions,
+        )
 
     # TODO: the cache uses a lot of RAM there should be a way to control the maxsize at runtime
     @classmethod
@@ -60,41 +92,13 @@ class Image:
         """Makes an Image object from the specified Path"""
         try:
             raw_image = PImage.open(path)
-            raw_image.putalpha(255)
-            thumbnail = PImageOps.pad(raw_image, thumbnail_dimensions, color="#000000")
-            dpg_texture = PImageOps.pad(
-                raw_image, main_image_dimensions, color="#000000"
-            )
         except Exception:
             # I know that catching all exceptions is bad, but the range of errors is truly insane here
             logger.error(f"Something is seriously wrong with image: {str(path)}")
             raw_image = PImage.open("./dopylogofinal.png")
-            raw_image.putalpha(255)
-            thumbnail = PImageOps.pad(raw_image, thumbnail_dimensions, color="#000000")
-            dpg_texture = PImageOps.pad(
-                raw_image, main_image_dimensions, color="#000000"
-            )
 
-        # this frees up memory, PIL.Image.open() is lazy and does not load the image into memory till it needs to be
-        try:
-            raw_image = PImage.open(path)
-        except PImage.UnidentifiedImageError:
-            pass
-
-        # dpg_texture-ifying
-        channels = len(thumbnail.getbands())
-        thumbnail = (
-            *thumbnail_dimensions,
-            channels,
-            np.frombuffer(thumbnail.tobytes(), dtype=np.uint8) / 255.0,
-        )
-        dpg_texture = (
-            *main_image_dimensions,
-            channels,
-            np.frombuffer(dpg_texture.tobytes(), dtype=np.uint8) / 255.0,
-        )
         logger.debug(f"Image made from path: {str(path)}")
-        return Image(path.name, raw_image, dpg_texture, thumbnail)
+        return Image(path.name, raw_image, main_image_dimensions, thumbnail_dimensions)
 
     @classmethod
     @functools.lru_cache(maxsize=40)
@@ -109,29 +113,6 @@ class Image:
         """Makes an Image object by querying the DoPy server"""
         # TODO: creation of the scaled dpg texture and thumbnails should ideally take place on the server.
         raise NotImplemented
-
-    @classmethod
-    def from_raw_image(
-        cls, image: PImage.Image, thumbnail_dimensions, main_image_dimensions
-    ):
-        image.putalpha(255)
-        thumbnail = PImageOps.pad(image, thumbnail_dimensions, color="#000000")
-        dpg_texture = PImageOps.pad(image, main_image_dimensions, color="#000000")
-        # dpg_texture-ifying
-        channels = len(thumbnail.getbands())
-        thumbnail = (
-            *thumbnail_dimensions,
-            channels,
-            np.frombuffer(thumbnail.tobytes(), dtype=np.uint8) / 255.0,
-        )
-        dpg_texture = (
-            *main_image_dimensions,
-            channels,
-            np.frombuffer(dpg_texture.tobytes(), dtype=np.uint8) / 255.0,
-        )
-        raw_image = image
-        logger.debug(f"Updated image")
-        return Image("N/A", raw_image, dpg_texture, thumbnail)
 
 
 class ImageManager:
