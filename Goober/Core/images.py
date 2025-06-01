@@ -62,7 +62,7 @@ class Image:
         return np.frombuffer(self.raw_image.tobytes(), dtype=np.uint8) / 255.0
 
     @functools.cache
-    def get_scaled_image(self, factor=0.25):
+    def get_scaled_image(self, factor=0.15):
         return Image(
             f"{self.name}_{factor:.2f}",
             PImageOps.scale(self.raw_image, factor),

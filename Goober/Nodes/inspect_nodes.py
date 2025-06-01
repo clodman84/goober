@@ -5,8 +5,7 @@ from typing import Callable
 
 import dearpygui.dearpygui as dpg
 
-import Core
-from Core import Image
+from Goober.Core import Image, get_histogram
 
 from .graph_abc import Node
 
@@ -94,7 +93,7 @@ class HistogramNode(Node):
         if not edge.data:
             return
         image: Image = edge.data
-        histogram = Core.get_histogram(image.raw_image)
+        histogram = get_histogram(image.raw_image)
         dpg.set_value(f"{self.id}_R", [[i for i in range(256)], histogram[0]])
         dpg.set_value(f"{self.id}_G", [[i for i in range(256)], histogram[1]])
         dpg.set_value(f"{self.id}_B", [[i for i in range(256)], histogram[2]])

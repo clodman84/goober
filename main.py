@@ -4,8 +4,9 @@ from pathlib import Path
 import dearpygui.dearpygui as dpg
 from dearpygui import demo
 
-import Core
-import GUI
+import Goober.Core
+import Goober.image_editor
+import Goober.utils
 
 logger = logging.getLogger("Core.Main")
 
@@ -33,12 +34,12 @@ def main():
                 dpg.add_menu_item(label="Show GUI Demo", callback=demo.show_demo)
                 dpg.add_menu_item(
                     label="Spawn Image Editor",
-                    callback=lambda: GUI.EditingWindow(
+                    callback=lambda: Goober.image_editor.EditingWindow(
                         [i for i in Path("./Data/18R/").iterdir()]
                     ),
                 )
 
-    log = GUI.Logger()
+    log = Goober.utils.Logger()
     log.setFormatter(formatter)
     core_logger.addHandler(log)
     gui_logger.addHandler(log)

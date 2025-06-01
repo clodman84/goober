@@ -2,10 +2,9 @@ import logging
 from typing import Callable
 
 import dearpygui.dearpygui as dpg
-from line_profiler import profile
 from PIL import ImageEnhance
 
-from Core import Image
+from Goober.Core import Image
 
 from .graph_abc import Node
 
@@ -43,8 +42,7 @@ class EnhanceNode(Node):
             return False
         return True
 
-    @profile
-    def process(self):
+    def process(self, is_final=False):
         if self.input_attributes[self.image_attribute]:
             edge = self.input_attributes[self.image_attribute][0]
             image: Image = edge.data
@@ -59,14 +57,14 @@ class EnhanceNode(Node):
                 logger.debug(f"Populated edge {edge.id} with image from {self.id}")
 
 
-class ColorBalance(EnhanceNode):
+class Saturation(EnhanceNode):
     def __init__(
         self,
         parent: str | int,
         update_hook: Callable = lambda: None,
         enhancement=ImageEnhance.Color,
         default_value=1,
-        label="Color Balance",
+        label="Saturation",
     ):
         super().__init__(label, parent, update_hook, enhancement, default_value)
 

@@ -5,13 +5,8 @@ from pathlib import Path
 
 import dearpygui.dearpygui as dpg
 
-from Core import ImageManager
-
-from .enhancement_nodes import Brightness, ColorBalance, Contrast, Sharpness
-from .graph_abc import Edge, Node
-from .image_nodes import ImageNode
-from .inspect_nodes import HistogramNode, PreviewNode
-from .manual_colour_balance import ManualColorBalance
+import Goober.Nodes as Nodes
+from Goober.Core import ImageManager
 
 logger = logging.getLogger("GUI.Editor")
 
@@ -23,7 +18,7 @@ class EditingWindow:
         )
         self.node_lookup_by_attribute_id = {}
         self.edge_lookup_by_edge_id = {}
-        self.adjacency_list: dict[Node, list[Node]] = {}
+        self.adjacency_list: dict[Nodes.Node, list[Nodes.Node]] = {}
 
         with dpg.window(label="Image Editor", width=500, height=500):
             with dpg.menu_bar():
@@ -34,7 +29,7 @@ class EditingWindow:
                     dpg.add_menu_item(label="Preview", callback=self.add_preview_node)
                 with dpg.menu(label="Enhance"):
                     dpg.add_menu_item(
-                        label="Colour Balance", callback=self.add_color_balance_node
+                        label="Saturation", callback=self.add_saturation_node
                     )
                     dpg.add_menu_item(label="Contrast", callback=self.add_contrast_node)
                     dpg.add_menu_item(
@@ -62,10 +57,10 @@ class EditingWindow:
         id = dpg.add_node_link(app_data[0], app_data[1], parent=sender)
         logger.debug(self.node_lookup_by_attribute_id)
 
-        input: Node = self.node_lookup_by_attribute_id[app_data[0]]
-        output: Node = self.node_lookup_by_attribute_id[app_data[1]]
+        input: Nodes.Node = self.node_lookup_by_attribute_id[app_data[0]]
+        output: Nodes.Node = self.node_lookup_by_attribute_id[app_data[1]]
 
-        edge = Edge(id, None, input, output, app_data[0], app_data[1])
+        edge = Nodes.Edge(id, None, input, output, app_data[0], app_data[1])
         self.edge_lookup_by_edge_id[id] = edge
         self.adjacency_list[input].append(output)
         edge.connect()
@@ -75,25 +70,25 @@ class EditingWindow:
         edge.disconnect()
         self.adjacency_list[edge.input].remove(edge.output)
 
-    def add_node(self, node: Node):
+    def add_node(self, node: Nodes.Node):
         for attribute in itertools.chain(node.input_attributes, node.output_attributes):
             self.node_lookup_by_attribute_id[attribute] = node
         self.adjacency_list[node] = []
 
     def add_histogram_node(self):
-        node = HistogramNode(
+        node = Nodes.HistogramNode(
             label="Histogram", parent=self.node_editor, update_hook=self.evaluate
         )
         self.add_node(node)
 
     def add_preview_node(self):
-        node = PreviewNode(
+        node = Nodes.PreviewNode(
             label="Preview", parent=self.node_editor, update_hook=self.evaluate
         )
         self.add_node(node)
 
     def add_image_node(self):
-        node = ImageNode(
+        node = Nodes.ImageNode(
             label="Image",
             parent=self.node_editor,
             image=self.image_manager.load(0),
@@ -101,24 +96,24 @@ class EditingWindow:
         )
         self.add_node(node)
 
-    def add_color_balance_node(self):
-        node = ColorBalance(parent=self.node_editor, update_hook=self.evaluate)
+    def add_saturation_node(self):
+        node = Nodes.Saturation(parent=self.node_editor, update_hook=self.evaluate)
         self.add_node(node)
 
     def add_contrast_node(self):
-        node = Contrast(parent=self.node_editor, update_hook=self.evaluate)
+        node = Nodes.Contrast(parent=self.node_editor, update_hook=self.evaluate)
         self.add_node(node)
 
     def add_brightness_node(self):
-        node = Brightness(parent=self.node_editor, update_hook=self.evaluate)
+        node = Nodes.Brightness(parent=self.node_editor, update_hook=self.evaluate)
         self.add_node(node)
 
     def add_sharpness_node(self):
-        node = Sharpness(parent=self.node_editor, update_hook=self.evaluate)
+        node = Nodes.Sharpness(parent=self.node_editor, update_hook=self.evaluate)
         self.add_node(node)
 
     def add_manual_colour_balance_node(self):
-        node = ManualColorBalance(
+        node = Nodes.ColourBalance(
             label="Manual Colour Balance",
             parent=self.node_editor,
             update_hook=self.evaluate,
@@ -130,7 +125,7 @@ class EditingWindow:
         Get a list of nodes to process in the correct order.
         (A will not be before B if the output of B is required for A)
         """
-        # this is a modified kahn's algo: https://en.wikipedia.org/wiki/Topological_sorting
+        # just kahn's algo: https://en.wikipedia.org/wiki/Topological_sorting
 
         in_degree = defaultdict(int)
         for node in self.adjacency_list:
