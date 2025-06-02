@@ -26,12 +26,14 @@ def colour_balance(
     shadows: tuple[float, float, float],
     midtones: tuple[float, float, float],
     highlights: tuple[float, float, float],
+    preserve_luminance: bool = False,
 ) -> PImage.Image:
     # inspired by GIMP's algorithm but uses luminance instead of lightness
     # https://gitlab.gnome.org/GNOME/gimp/-/blob/master/app/operations/gimpoperationcolorbalance.c
 
     arr = np.asarray(img.convert("RGB"), dtype=np.float32) / 255.0
-    luminance = np.asarray(img.convert("YCbCr").split()[0], dtype=np.float32) / 255.0
+    image_YCbCr = img.convert("YCbCr")
+    luminance = np.asarray(image_YCbCr.split()[0], dtype=np.float32) / 255.0
 
     # Convert input corrections from [-100,100] to [-1,1]
     s = np.array(shadows) / 100.0
@@ -58,5 +60,16 @@ def colour_balance(
     arr = arr + shadows_adjustment + midtones_adjustment + highlights_adjustment
     arr = np.clip(arr, 0, 1)
     arr *= 255
+    out = PImage.fromarray(arr.astype(np.uint8), "RGB")
 
-    return PImage.fromarray(arr.astype(np.uint8), "RGB")
+    if preserve_luminance:
+        out_y, out_cb, out_cr = out.convert("YCbCr").split()
+        in_y = image_YCbCr.split()[0]
+        out = PImage.merge("YCbCr", [in_y, out_cb, out_cr])
+        out = out.convert("RGB")
+
+    return out
+
+
+def exposure(img: PImage.Image):
+    return img

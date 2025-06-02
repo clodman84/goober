@@ -8,7 +8,7 @@ from Goober.Core import Image, colour_balance
 
 from .graph_abc import Node
 
-logger = logging.getLogger("GUI.InspectNodes")
+logger = logging.getLogger("GUI.ColourBalance")
 
 
 class ColourBalance(Node):
@@ -25,7 +25,7 @@ class ColourBalance(Node):
         self.image_output_attribute = self.add_attribute(
             label="Out", attribute_type=dpg.mvNode_Attr_Output
         )
-        with dpg.child_window(parent=self.image_attribute, width=200, height=240):
+        with dpg.child_window(parent=self.image_attribute, width=200, height=250):
             dpg.add_text("Shadows")
             self.red_shadows = dpg.add_slider_int(
                 label="Red",
@@ -101,6 +101,9 @@ class ColourBalance(Node):
                 min_value=-100,
                 max_value=100,
             )
+            self.preserve_luminance = dpg.add_checkbox(
+                label="Preserve Luminance", callback=self.update
+            )
 
     def validate_input(self, edge, attribute_id) -> bool:
         # only permitting a single connection
@@ -116,6 +119,7 @@ class ColourBalance(Node):
         if self.input_attributes[self.image_attribute]:
             edge = self.input_attributes[self.image_attribute][0]
             image: Image = edge.data
+            preserve = dpg.get_value(self.preserve_luminance)
 
             dr_s = dpg.get_value(self.red_shadows)
             dg_s = dpg.get_value(self.green_shadows)
@@ -134,6 +138,7 @@ class ColourBalance(Node):
                 [dr_s, dg_s, db_s],
                 [dr_m, dg_m, db_m],
                 [dr_h, dg_h, db_h],
+                preserve,
             )
             image = Image("NA", updated_image, (600, 600), (200, 200))
 
