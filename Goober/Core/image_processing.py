@@ -13,6 +13,10 @@ def get_histogram(image: PImage.Image):
     return [a for a in itertools.batched(image.histogram(), n=256)]
 
 
+def get_rgb_histogram(image: PImage.Image):
+    return image.convert("L").histogram()
+
+
 def add(image, dx):
     image = ImageMath.lambda_eval(
         lambda args: args["image"] + args["val"], image=image, val=dx
@@ -20,7 +24,6 @@ def add(image, dx):
     return image.convert("L")
 
 
-@profile
 def colour_balance(
     img: PImage.Image,
     shadows: tuple[float, float, float],
@@ -71,5 +74,12 @@ def colour_balance(
     return out
 
 
-def exposure(img: PImage.Image):
-    return img
+@profile
+def levels(img: PImage.Image, black, white, gamma):
+    arr = np.asarray(img, dtype=np.float32) / 255
+    arr = (arr - black) / (white - black)
+    arr = np.power(arr, 1 / gamma)
+    arr = arr * 255
+    arr = np.clip(arr, 0, 255)
+    out = PImage.fromarray(arr.astype(np.uint8), "RGBA")
+    return out

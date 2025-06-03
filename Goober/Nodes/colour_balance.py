@@ -27,6 +27,7 @@ class ColourBalance(Node):
         )
         with dpg.child_window(parent=self.image_attribute, width=200, height=250):
             dpg.add_text("Shadows")
+            # TODO: replace these with colourmap_sliders
             self.red_shadows = dpg.add_slider_int(
                 label="Red",
                 default_value=0,

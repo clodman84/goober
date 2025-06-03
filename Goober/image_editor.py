@@ -43,6 +43,7 @@ class EditingWindow:
                         label="Colour Balance",
                         callback=self.add_manual_colour_balance_node,
                     )
+                    dpg.add_menu_item(label="Levels", callback=self.add_levels_node)
 
                 with dpg.menu(label="Import"):
                     dpg.add_menu_item(label="Image", callback=self.add_image_node)
@@ -117,6 +118,12 @@ class EditingWindow:
             label="Manual Colour Balance",
             parent=self.node_editor,
             update_hook=self.evaluate,
+        )
+        self.add_node(node)
+
+    def add_levels_node(self):
+        node = Nodes.Levels(
+            label="Levels", parent=self.node_editor, update_hook=self.evaluate
         )
         self.add_node(node)
 
