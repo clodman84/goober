@@ -47,16 +47,13 @@ def split_smh(image: PImage.Image):
 
     a = 0.25
     b = 0.333
-    scale = 0.7
 
     # Compute masks
-    mask_shadows = np.clip((luminance - b) / -a + 0.5, 0, 1) * scale
-    mask_midtones = (
-        np.clip((luminance - b) / a + 0.5, 0, 1)
-        * np.clip((luminance + b - 1) / -a + 0.5, 0, 1)
-        * scale
+    mask_shadows = np.clip((luminance - b) / -a + 0.5, 0, 1)
+    mask_midtones = np.clip((luminance - b) / a + 0.5, 0, 1) * np.clip(
+        (luminance + b - 1) / -a + 0.5, 0, 1
     )
-    mask_highlights = np.clip((luminance + b - 1) / a + 0.5, 0, 1) * scale
+    mask_highlights = np.clip((luminance + b - 1) / a + 0.5, 0, 1)
 
     shadows = arr * mask_shadows[..., np.newaxis]
     shadows = np.clip(shadows, 0, 1)
