@@ -2,6 +2,7 @@ import itertools
 import logging
 from collections import defaultdict
 from pathlib import Path
+from types import prepare_class
 
 import dearpygui.dearpygui as dpg
 
@@ -44,6 +45,14 @@ class EditingWindow:
                         callback=self.add_manual_colour_balance_node,
                     )
                     dpg.add_menu_item(label="Levels", callback=self.add_levels_node)
+                with dpg.menu(label="ChannelOps"):
+                    dpg.add_menu_item(
+                        label="RGB Splitter", callback=self.add_rgb_splitter_node
+                    )
+                    dpg.add_menu_item(
+                        label="Tone Splitter", callback=self.add_smh_splitter_node
+                    )
+                    dpg.add_menu_item(label="Merge", callback=self.add_merge_node)
 
                 with dpg.menu(label="Import"):
                     dpg.add_menu_item(label="Image", callback=self.add_image_node)
@@ -75,6 +84,24 @@ class EditingWindow:
         for attribute in itertools.chain(node.input_attributes, node.output_attributes):
             self.node_lookup_by_attribute_id[attribute] = node
         self.adjacency_list[node] = []
+
+    def add_rgb_splitter_node(self):
+        node = Nodes.RGBSplitter(
+            label="RGB Splitter", parent=self.node_editor, update_hook=self.evaluate
+        )
+        self.add_node(node)
+
+    def add_merge_node(self):
+        node = Nodes.Merge(
+            label="Merge", parent=self.node_editor, update_hook=self.evaluate
+        )
+        self.add_node(node)
+
+    def add_smh_splitter_node(self):
+        node = Nodes.SMHSplitter(
+            label="Tone Splitter", parent=self.node_editor, update_hook=self.evaluate
+        )
+        self.add_node(node)
 
     def add_histogram_node(self):
         node = Nodes.HistogramNode(
