@@ -56,7 +56,6 @@ class Node(ABC):
         """
         It's only job is to populate all output edges
         """
-        # TODO: Implement some form of cache
 
     def add_attribute(self, label, attribute_type):
         attribute_id = dpg.add_node_attribute(
@@ -88,6 +87,7 @@ class Node(ABC):
         self.update()
 
     def update(self):
+        # add an action saving feature here
         self.activate()
         self.update_hook()
 

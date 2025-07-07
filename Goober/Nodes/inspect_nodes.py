@@ -86,7 +86,7 @@ class HistogramNode(Node):
                 dpg.add_plot_legend()
         logger.debug("Initialised histogram node")
 
-    def process(self, is_final=True):
+    def process(self, is_final=False):
         if not self.input_attributes[self.image_attribute]:
             return
         edge = self.input_attributes[self.image_attribute][0]
@@ -126,8 +126,11 @@ class PreviewNode(Node):
         self.image_output_attribute = self.add_attribute(
             label="Out", attribute_type=dpg.mvNode_Attr_Output
         )
-        with dpg.child_window(width=400, height=300, parent=self.image_attribute):
-            with dpg.plot(no_frame=True):
+        # TODO: resize the window to have the same aspect ratio as the image
+        with dpg.child_window(
+            width=400, height=300, parent=self.image_attribute
+        ) as self.window:
+            with dpg.plot(no_frame=True) as self.plot:
                 self.xaxis = dpg.add_plot_axis(dpg.mvXAxis, no_tick_labels=True)
                 with dpg.plot_axis(dpg.mvYAxis, no_tick_labels=True) as self.yaxis:
                     self.register_and_show_image(self.image, self.yaxis)
@@ -159,8 +162,12 @@ class PreviewNode(Node):
             parent=parent,
             tag=f"{self.id}_image_series",
         )
-        dpg.fit_axis_data(self.xaxis)
         dpg.fit_axis_data(self.yaxis)
+        width, height = image.raw_image.width, image.raw_image.height
+        ratio = width / height
+        dpg.set_item_width(self.window, int(ratio * 300))
+        dpg.set_item_width(self.plot, int(ratio * 300))
+        dpg.fit_axis_data(self.xaxis)
 
     def process(self, is_final=False):
         if self.input_attributes[self.image_attribute]:
@@ -174,6 +181,10 @@ class PreviewNode(Node):
                 dpg.set_value(f"{self.id}_image", image.dpg_raw)
 
             self.image = image
+            if is_final:
+                self.image.raw_image.save(f"./Data/{self.id}.png")
+                logger.debug(f"Saved output to {self.id}.png")
+
             for edge in self.output_attributes[self.image_output_attribute]:
                 edge.data = self.image
                 logger.debug(f"Populated edge {edge.id} with image from {self.id}")

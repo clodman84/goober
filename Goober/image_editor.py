@@ -2,7 +2,6 @@ import itertools
 import logging
 from collections import defaultdict
 from pathlib import Path
-from types import prepare_class
 
 import dearpygui.dearpygui as dpg
 
@@ -57,7 +56,10 @@ class EditingWindow:
                 with dpg.menu(label="Import"):
                     dpg.add_menu_item(label="Image", callback=self.add_image_node)
 
-                dpg.add_button(label="Evaluate", callback=self.evaluate)
+                dpg.add_button(
+                    label="Evaluate", callback=lambda: self.evaluate(is_final=True)
+                )
+
             with dpg.node_editor(
                 callback=self.link, delink_callback=self.delink, minimap=True
             ) as self.node_editor:
@@ -189,10 +191,17 @@ class EditingWindow:
         else:
             return sorted_list
 
-    def evaluate(self):
-        # TODO: parallelism???? Set up a process pool of some sort and greedily consume items from the sorted_node_list
+    # TODO: this bit can be cleaned up
+    def evaluate(self, is_final=False):
+        if is_final:
+            # activate all image nodes
+            logger.debug(f"Activated all ImageNodes, is_final: {is_final}")
+            for node in self.adjacency_list.keys():
+                if isinstance(node, Nodes.ImageNode):
+                    node.activate()
+
         sorted_node_list = self.topological_sort()
         for node in sorted_node_list:
-            node.process()
+            node.process(is_final=is_final)
             node.state = 0
             logger.debug(f"{node} state changed to 0")

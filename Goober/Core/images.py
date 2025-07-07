@@ -70,7 +70,6 @@ class Image:
             self.thumbnail_dimensions,
         )
 
-    # TODO: the cache uses a lot of RAM there should be a way to control the maxsize at runtime
     @classmethod
     @functools.lru_cache(maxsize=40)
     def frompath(

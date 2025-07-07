@@ -1,6 +1,5 @@
 import itertools
 import logging
-from typing import Sequence
 
 import numpy as np
 from line_profiler import profile

@@ -34,5 +34,6 @@ class ImageNode(Node):
     def process(self, is_final=False):
         # put the image in all connected output edges
         for edge in self.output_attributes[self.image_attribute]:
+            # TODO: adjust scaling so that the image isn't grainy
             edge.data = self.image if is_final else self.image.get_scaled_image()
             logger.debug(f"Populated edge {edge.id} with image from {self.id}")

@@ -116,7 +116,7 @@ class ColourBalance(Node):
         return True
 
     @profile
-    def process(self):
+    def process(self, is_final=True):
         if self.input_attributes[self.image_attribute]:
             edge = self.input_attributes[self.image_attribute][0]
             image: Image = edge.data

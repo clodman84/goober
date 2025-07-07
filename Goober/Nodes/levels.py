@@ -97,7 +97,7 @@ class Levels(Node):
         return True
 
     @profile
-    def process(self):
+    def process(self, is_final=False):
         if self.input_attributes[self.image_attribute]:
             edge = self.input_attributes[self.image_attribute][0]
             if not edge.data:
