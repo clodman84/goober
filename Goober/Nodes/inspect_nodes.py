@@ -4,10 +4,11 @@ from pathlib import Path
 from typing import Callable
 
 import dearpygui.dearpygui as dpg
+from line_profiler import profile
 
 from Goober.Core import Image, get_histogram
 
-from .graph_abc import Node
+from .graph_abc import Node, Edge, InspectNode
 
 logger = logging.getLogger("GUI.InspectNodes")
 
@@ -32,7 +33,7 @@ def set_up_line_plot_themes():
     return r, g, b
 
 
-class HistogramNode(Node):
+class HistogramNode(InspectNode):
     def __init__(self, label: str, parent: str | int, update_hook: Callable):
         super().__init__(label, parent, update_hook=update_hook)
         self.image_attribute = self.add_attribute(
@@ -111,10 +112,10 @@ class HistogramNode(Node):
 
 @functools.cache
 def get_default_image():
-    return Image.frompath(Path(f"./Data/default.jpg"), (600, 600), (200, 200))
+    return Image.frompath(Path(f"./Data/default.png"), (600, 600), (200, 200))
 
 
-class PreviewNode(Node):
+class PreviewNode(InspectNode):
     def __init__(
         self, label: str, parent: str | int, update_hook: Callable = lambda: None
     ):
@@ -169,6 +170,7 @@ class PreviewNode(Node):
         dpg.set_item_width(self.plot, int(ratio * 300))
         dpg.fit_axis_data(self.xaxis)
 
+    @profile
     def process(self, is_final=False):
         if self.input_attributes[self.image_attribute]:
             edge = self.input_attributes[self.image_attribute][0]

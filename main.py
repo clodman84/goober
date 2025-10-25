@@ -4,7 +4,6 @@ from pathlib import Path
 import dearpygui.dearpygui as dpg
 from dearpygui import demo
 
-import Goober.Core
 import Goober.image_editor
 import Goober.utils
 

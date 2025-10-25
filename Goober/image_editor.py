@@ -1,12 +1,14 @@
 import itertools
 import logging
-from collections import defaultdict
+from collections import defaultdict, deque
 from pathlib import Path
+from line_profiler import profile
 
 import dearpygui.dearpygui as dpg
 
 import Goober.Nodes as Nodes
 from Goober.Core import ImageManager
+from Goober.Nodes.graph_abc import InspectNode
 
 logger = logging.getLogger("GUI.Editor")
 
@@ -156,13 +158,32 @@ class EditingWindow:
         )
         self.add_node(node)
 
+    def get_visible_nodes(self):
+        """
+        Get a list of nodes that are not eventually connected to an InspectNode
+        """
+        inspect_nodes = [
+            node for node in self.adjacency_list if isinstance(node, Nodes.InspectNode)
+        ]
+        visible_nodes = set(inspect_nodes)
+        q = deque(inspect_nodes)
+        while q:
+            node = q.popleft()
+            # node.input_attributes: dict(attribute_id -> list[Edge]) -> incoming edges
+            for edge_list in node.input_attributes.values():
+                for edge in list(edge_list):  # copy to avoid mutation problems
+                    parent = edge.input
+                    if parent not in visible_nodes:
+                        visible_nodes.add(parent)
+                        q.append(parent)
+        return visible_nodes
+
     def topological_sort(self):
         """
         Get a list of nodes to process in the correct order.
         (A will not be before B if the output of B is required for A)
         """
         # just kahn's algo: https://en.wikipedia.org/wiki/Topological_sorting
-
         in_degree = defaultdict(int)
         for node in self.adjacency_list:
             for neighbour in self.adjacency_list[node]:
@@ -192,6 +213,7 @@ class EditingWindow:
             return sorted_list
 
     # TODO: this bit can be cleaned up
+    @profile
     def evaluate(self, is_final=False):
         if is_final:
             # activate all image nodes
@@ -200,8 +222,15 @@ class EditingWindow:
                 if isinstance(node, Nodes.ImageNode):
                     node.activate()
 
+        visible_nodes = self.get_visible_nodes()
         sorted_node_list = self.topological_sort()
+
+        logger.debug(
+            f"Sorted node list: {sorted_node_list}, Visible Nodes: {visible_nodes}"
+        )
         for node in sorted_node_list:
-            node.process(is_final=is_final)
-            node.state = 0
-            logger.debug(f"{node} state changed to 0")
+            if node in visible_nodes:
+                logger.debug(f"Processed Node {node}")
+                node.process(is_final=is_final)
+                node.state = 0
+                logger.debug(f"{node} state changed to 0")

@@ -3,12 +3,13 @@ from typing import Callable
 
 import dearpygui.dearpygui as dpg
 from PIL import ImageEnhance
+from line_profiler import profile
 
 from Goober.Core import Image
 
 from .graph_abc import Node
 
-logger = logging.getLogger("GUI.InspectNodes")
+logger = logging.getLogger("GUI.EnhanceNodes")
 
 
 class EnhanceNode(Node):
@@ -42,6 +43,7 @@ class EnhanceNode(Node):
             return False
         return True
 
+    @profile
     def process(self, is_final=False):
         if self.input_attributes[self.image_attribute]:
             edge = self.input_attributes[self.image_attribute][0]

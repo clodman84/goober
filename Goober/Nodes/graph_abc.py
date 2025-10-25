@@ -87,13 +87,12 @@ class Node(ABC):
         self.update()
 
     def update(self):
-        # add an action saving feature here
         self.activate()
         self.update_hook()
 
     def activate(self):
         self.state = 1
-        logger.debug(f"{self} state changed to 1")
+        logger.debug(str(self))
         for attribute in self.output_attributes.values():
             for edge in attribute:
                 edge.output.activate()
@@ -103,3 +102,11 @@ class Node(ABC):
 
     def validate_output(self, edge, attribute_id) -> bool:
         return True
+
+    def __str__(self):
+        return f"{self.label} {id(self)} state: {self.state}"
+
+
+class InspectNode(Node):
+    def __init__(self, label: str, parent: str | int, update_hook: Callable):
+        super().__init__(label, parent, update_hook)
