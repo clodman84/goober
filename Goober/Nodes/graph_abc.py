@@ -1,9 +1,14 @@
 import logging
-from abc import ABC, abstractmethod
+import functools
+import time
+
+from abc import ABC, ABCMeta, abstractmethod
 from dataclasses import dataclass
 from typing import Any, Callable, Literal
 
 import dearpygui.dearpygui as dpg
+
+from Goober.Core import natural_time
 
 logger = logging.getLogger("GUI.GraphABC")
 
@@ -35,7 +40,34 @@ class Edge:
         dpg.delete_item(self.id)
 
 
-class Node(ABC):
+def update_exec_time(func):
+    @functools.wraps(func)
+    def wrapper(self, *args, **kwargs):
+        dpg.show_item(self.loading)
+        start = time.perf_counter()
+        result = func(self, *args, **kwargs)
+        end = time.perf_counter()
+        dpg.hide_item(self.loading)
+        dpg.set_value(self.processing_time, natural_time(end - start))
+        return result
+
+    return wrapper
+
+
+class TimedMeta(ABCMeta):
+    def __init__(cls, name, bases, namespace):
+        super().__init__(name, bases, namespace)
+
+        # Wrap all methods that override abstract ones
+        for base in bases:
+            for attr_name, attr_val in base.__dict__.items():
+                if getattr(attr_val, "__isabstractmethod__", False):
+                    if attr_name in namespace:
+                        method = getattr(cls, attr_name)
+                        setattr(cls, attr_name, update_exec_time(method))
+
+
+class Node(ABC, metaclass=TimedMeta):
     """
     Node do the processing, Edges store the data
     """
@@ -44,6 +76,19 @@ class Node(ABC):
         self, label: str, parent: str | int, update_hook: Callable = lambda: None
     ):
         self.id = dpg.add_node(label=label, parent=parent)
+        static = dpg.add_node_attribute(
+            attribute_type=dpg.mvNode_Attr_Static, parent=self.id
+        )
+        self.status_group = dpg.add_group(horizontal=True, parent=static)
+
+        dpg.add_button(
+            label="Close",
+            callback=self.delete,
+            parent=self.status_group,
+        )
+
+        self.processing_time = dpg.add_text("", parent=self.status_group)
+        self.loading = dpg.add_text("(>_<)", parent=self.status_group, show=False)
         self.label = label
         self.parent = parent
         self.input_attributes: dict[str | int, list[Edge]] = {}
@@ -51,11 +96,16 @@ class Node(ABC):
         self.update_hook = update_hook
         self.state: Literal[0, 1] = 0
 
+    def delete(self):
+        pass
+
     @abstractmethod
+    @update_exec_time
     def process(self, is_final=False):
         """
         It's only job is to populate all output edges
         """
+        pass
 
     def add_attribute(self, label, attribute_type):
         attribute_id = dpg.add_node_attribute(

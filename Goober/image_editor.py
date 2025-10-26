@@ -8,7 +8,6 @@ import dearpygui.dearpygui as dpg
 
 import Goober.Nodes as Nodes
 from Goober.Core import ImageManager
-from Goober.Nodes.graph_abc import InspectNode
 
 logger = logging.getLogger("GUI.Editor")
 
@@ -43,7 +42,7 @@ class EditingWindow:
                 with dpg.menu(label="Manual"):
                     dpg.add_menu_item(
                         label="Colour Balance",
-                        callback=self.add_manual_colour_balance_node,
+                        callback=self.add_colour_balance_node,
                     )
                     dpg.add_menu_item(label="Levels", callback=self.add_levels_node)
                 with dpg.menu(label="ChannelOps"):
@@ -144,9 +143,9 @@ class EditingWindow:
         node = Nodes.Sharpness(parent=self.node_editor, update_hook=self.evaluate)
         self.add_node(node)
 
-    def add_manual_colour_balance_node(self):
+    def add_colour_balance_node(self):
         node = Nodes.ColourBalance(
-            label="Manual Colour Balance",
+            label="Colour Balance",
             parent=self.node_editor,
             update_hook=self.evaluate,
         )

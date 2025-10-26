@@ -8,3 +8,4 @@ from .image_processing import (
     split_smh,
 )
 from .images import Image, ImageManager
+from .utils import natural_time

@@ -36,7 +36,7 @@ class Levels(Node):
         self.image_output_attribute = self.add_attribute(
             label="Out", attribute_type=dpg.mvNode_Attr_Output
         )
-        with dpg.child_window(parent=self.image_attribute, width=400, height=240):
+        with dpg.group(parent=self.image_attribute, width=400, height=240):
             with dpg.plot(height=200, width=-1):
                 dpg.add_plot_axis(dpg.mvXAxis, label="Value", no_label=True)
                 dpg.add_plot_axis(

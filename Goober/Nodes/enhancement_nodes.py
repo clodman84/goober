@@ -28,10 +28,12 @@ class EnhanceNode(Node):
         self.image_output_attribute = self.add_attribute(
             label="Out", attribute_type=dpg.mvNode_Attr_Output
         )
-        with dpg.child_window(parent=self.image_attribute, width=100, height=30):
-            self.slider = dpg.add_input_float(
-                default_value=default_value, callback=self.update
-            )
+        self.slider = dpg.add_input_float(
+            parent=self.image_attribute,
+            default_value=default_value,
+            callback=self.update,
+            width=200,
+        )
         self.enhancement = enhancement
 
     def validate_input(self, edge, attribute_id) -> bool:

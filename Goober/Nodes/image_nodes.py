@@ -27,9 +27,8 @@ class ImageNode(Node):
         self.image_attribute = self.add_attribute(
             label="Image", attribute_type=dpg.mvNode_Attr_Output
         )
-        with dpg.child_window(width=200, height=200, parent=self.image_attribute):
-            dpg.add_image(f"{self.id}_image")
-            logger.debug("Added image to node")
+        dpg.add_image(f"{self.id}_image", parent=self.image_attribute)
+        logger.debug("Added image to node")
 
     def process(self, is_final=False):
         # put the image in all connected output edges

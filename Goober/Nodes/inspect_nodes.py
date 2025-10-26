@@ -39,52 +39,51 @@ class HistogramNode(InspectNode):
         self.image_attribute = self.add_attribute(
             label="Image", attribute_type=dpg.mvNode_Attr_Input
         )
-        with dpg.child_window(parent=self.image_attribute, width=200, height=200):
-            with dpg.plot(height=-1, width=-1):
-                dpg.add_plot_axis(dpg.mvXAxis, label="Value", no_label=True)
-                dpg.add_plot_axis(
-                    dpg.mvYAxis,
-                    label="Count",
-                    tag=f"{self.id}_yaxis",
-                    no_label=True,
-                    auto_fit=True,
-                    no_tick_labels=True,
-                )
-                r, g, b = set_up_line_plot_themes()
-                dpg.add_line_series(
-                    [i for i in range(256)],
-                    [
-                        0.0,
-                    ]
-                    * 256,
-                    tag=f"{self.id}_R",
-                    parent=f"{self.id}_yaxis",
-                    label="R",
-                )
-                dpg.add_line_series(
-                    [i for i in range(256)],
-                    [
-                        0.0,
-                    ]
-                    * 256,
-                    tag=f"{self.id}_G",
-                    parent=f"{self.id}_yaxis",
-                    label="G",
-                )
-                dpg.add_line_series(
-                    [i for i in range(256)],
-                    [
-                        0.0,
-                    ]
-                    * 256,
-                    tag=f"{self.id}_B",
-                    parent=f"{self.id}_yaxis",
-                    label="B",
-                )
-                dpg.bind_item_theme(f"{self.id}_R", r)
-                dpg.bind_item_theme(f"{self.id}_G", g)
-                dpg.bind_item_theme(f"{self.id}_B", b)
-                dpg.add_plot_legend()
+        with dpg.plot(height=200, width=200, parent=self.image_attribute):
+            dpg.add_plot_axis(dpg.mvXAxis, label="Value", no_label=True)
+            dpg.add_plot_axis(
+                dpg.mvYAxis,
+                label="Count",
+                tag=f"{self.id}_yaxis",
+                no_label=True,
+                auto_fit=True,
+                no_tick_labels=True,
+            )
+            r, g, b = set_up_line_plot_themes()
+            dpg.add_line_series(
+                [i for i in range(256)],
+                [
+                    0.0,
+                ]
+                * 256,
+                tag=f"{self.id}_R",
+                parent=f"{self.id}_yaxis",
+                label="R",
+            )
+            dpg.add_line_series(
+                [i for i in range(256)],
+                [
+                    0.0,
+                ]
+                * 256,
+                tag=f"{self.id}_G",
+                parent=f"{self.id}_yaxis",
+                label="G",
+            )
+            dpg.add_line_series(
+                [i for i in range(256)],
+                [
+                    0.0,
+                ]
+                * 256,
+                tag=f"{self.id}_B",
+                parent=f"{self.id}_yaxis",
+                label="B",
+            )
+            dpg.bind_item_theme(f"{self.id}_R", r)
+            dpg.bind_item_theme(f"{self.id}_G", g)
+            dpg.bind_item_theme(f"{self.id}_B", b)
+            dpg.add_plot_legend()
         logger.debug("Initialised histogram node")
 
     def process(self, is_final=False):
@@ -128,13 +127,12 @@ class PreviewNode(InspectNode):
             label="Out", attribute_type=dpg.mvNode_Attr_Output
         )
         # TODO: resize the window to have the same aspect ratio as the image
-        with dpg.child_window(
-            width=400, height=300, parent=self.image_attribute
-        ) as self.window:
-            with dpg.plot(no_frame=True) as self.plot:
-                self.xaxis = dpg.add_plot_axis(dpg.mvXAxis, no_tick_labels=True)
-                with dpg.plot_axis(dpg.mvYAxis, no_tick_labels=True) as self.yaxis:
-                    self.register_and_show_image(self.image, self.yaxis)
+        with dpg.plot(
+            no_frame=True, width=400, height=300, parent=self.image_attribute
+        ) as self.plot:
+            self.xaxis = dpg.add_plot_axis(dpg.mvXAxis, no_tick_labels=True)
+            with dpg.plot_axis(dpg.mvYAxis, no_tick_labels=True) as self.yaxis:
+                self.register_and_show_image(self.image, self.yaxis)
             logger.debug("Added default image to preview node")
 
     def validate_input(self, edge, attribute_id) -> bool:
@@ -166,7 +164,6 @@ class PreviewNode(InspectNode):
         dpg.fit_axis_data(self.yaxis)
         width, height = image.raw_image.width, image.raw_image.height
         ratio = width / height
-        dpg.set_item_width(self.window, int(ratio * 300))
         dpg.set_item_width(self.plot, int(ratio * 300))
         dpg.fit_axis_data(self.xaxis)
 
