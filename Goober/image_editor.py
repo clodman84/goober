@@ -24,43 +24,99 @@ class EditingWindow:
 
         with dpg.window(label="Image Editor", width=500, height=500):
             with dpg.menu_bar():
-                with dpg.menu(label="Inspect"):
+                with dpg.menu(label="File"):
                     dpg.add_menu_item(
-                        label="Histogram", callback=self.add_histogram_node
+                        label="Import Image",
+                        callback=self.add_image_node,
                     )
-                    dpg.add_menu_item(label="Preview", callback=self.add_preview_node)
-                with dpg.menu(label="Enhance"):
-                    dpg.add_menu_item(
-                        label="Saturation", callback=self.add_saturation_node
-                    )
-                    dpg.add_menu_item(label="Contrast", callback=self.add_contrast_node)
+                    with dpg.tooltip(dpg.last_item()):
+                        dpg.add_text("Add an image source node from your file list.")
+
+                with dpg.menu(label="Adjustments"):
                     dpg.add_menu_item(
                         label="Brightness", callback=self.add_brightness_node
                     )
+                    with dpg.tooltip(dpg.last_item()):
+                        dpg.add_text(
+                            "Adjust overall lightness or darkness of the image."
+                        )
+
+                    dpg.add_menu_item(label="Contrast", callback=self.add_contrast_node)
+                    with dpg.tooltip(dpg.last_item()):
+                        dpg.add_text("Increase or decrease contrast between tones.")
+
                     dpg.add_menu_item(
-                        label="Sharpness", callback=self.add_sharpness_node
+                        label="Saturation", callback=self.add_saturation_node
                     )
-                with dpg.menu(label="Manual"):
+                    with dpg.tooltip(dpg.last_item()):
+                        dpg.add_text("Control colour intensity or vividness.")
+
                     dpg.add_menu_item(
-                        label="Colour Balance",
-                        callback=self.add_colour_balance_node,
+                        label="Colour Balance", callback=self.add_colour_balance_node
                     )
+                    with dpg.tooltip(dpg.last_item()):
+                        dpg.add_text(
+                            "Adjust colour in shadows, midtones and highlights independently."
+                        )
+
                     dpg.add_menu_item(label="Levels", callback=self.add_levels_node)
-                with dpg.menu(label="ChannelOps"):
+                    with dpg.tooltip(dpg.last_item()):
+                        dpg.add_text(
+                            "Make dark things darker or light things lighter or both."
+                        )
+
+                # with dpg.menu(label="Filters"):
+                #     dpg.add_menu_item(
+                #         label="Sharpness", callback=self.add_sharpness_node
+                #     )
+                #     with dpg.tooltip(dpg.last_item()):
+                #         dpg.add_text("Enhance fine details and edges.")
+
+                with dpg.menu(label="Channel Ops"):
                     dpg.add_menu_item(
                         label="RGB Splitter", callback=self.add_rgb_splitter_node
                     )
+                    with dpg.tooltip(dpg.last_item()):
+                        dpg.add_text("Split image into red, green, and blue channels.")
+
                     dpg.add_menu_item(
                         label="Tone Splitter", callback=self.add_smh_splitter_node
                     )
-                    dpg.add_menu_item(label="Merge", callback=self.add_merge_node)
+                    with dpg.tooltip(dpg.last_item()):
+                        dpg.add_text(
+                            "Split image into shadows, midtones, and highlights."
+                        )
 
-                with dpg.menu(label="Import"):
-                    dpg.add_menu_item(label="Image", callback=self.add_image_node)
+                    dpg.add_menu_item(
+                        label="Merge Channels", callback=self.add_merge_node
+                    )
+                    with dpg.tooltip(dpg.last_item()):
+                        dpg.add_text(
+                            "Merge separate channel outputs back into one image."
+                        )
 
-                dpg.add_button(
-                    label="Evaluate", callback=lambda: self.evaluate(is_final=True)
-                )
+                with dpg.menu(label="View"):
+                    dpg.add_menu_item(label="Preview", callback=self.add_preview_node)
+                    with dpg.tooltip(dpg.last_item()):
+                        dpg.add_text("Render and view the final processed image.")
+
+                    dpg.add_menu_item(
+                        label="Histogram", callback=self.add_histogram_node
+                    )
+                    with dpg.tooltip(dpg.last_item()):
+                        dpg.add_text(
+                            "Display tonal distribution of the connected image."
+                        )
+
+                with dpg.menu(label="Graph"):
+                    dpg.add_menu_item(
+                        label="Evaluate Graph",
+                        callback=lambda: self.evaluate(is_final=True),
+                    )
+                    with dpg.tooltip(dpg.last_item()):
+                        dpg.add_text(
+                            "Run the entire node graph and update all outputs."
+                        )
 
             with dpg.node_editor(
                 callback=self.link, delink_callback=self.delink, minimap=True
@@ -206,7 +262,6 @@ class EditingWindow:
         q = deque(inspect_nodes)
         while q:
             node = q.popleft()
-            # node.input_attributes: dict(attribute_id -> list[Edge]) -> incoming edges
             for edge_list in node.input_attributes.values():
                 for edge in list(edge_list):  # copy to avoid mutation problems
                     parent = edge.input

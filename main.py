@@ -3,11 +3,13 @@ from pathlib import Path
 
 import dearpygui.dearpygui as dpg
 from dearpygui import demo
+from themes import create_gruvbox_dark_theme
 
 import Goober.image_editor
 import Goober.utils
 
 logger = logging.getLogger("Core.Main")
+import dearpygui.dearpygui as dpg
 
 
 def main():
@@ -29,6 +31,10 @@ def main():
                 dpg.add_menu_item(
                     label="Show Performance Metrics", callback=dpg.show_metrics
                 )
+                dpg.add_menu_item(
+                    label="Irreversible Experimental Theme",
+                    callback=create_gruvbox_dark_theme,
+                )
             with dpg.menu(label="Dev"):
                 dpg.add_menu_item(label="Show GUI Demo", callback=demo.show_demo)
                 dpg.add_menu_item(
@@ -37,6 +43,25 @@ def main():
                         [i for i in Path("./Data/18R/").iterdir()]
                     ),
                 )
+
+    with dpg.colormap_registry():
+        dpg.add_colormap(
+            [[0, 255, 255], [255, 0, 0]],
+            False,
+            tag="red",
+        )
+
+        dpg.add_colormap(
+            [[255, 0, 255], [0, 255, 0]],
+            False,
+            tag="green",
+        )
+
+        dpg.add_colormap(
+            [[255, 255, 0], [0, 0, 255]],
+            False,
+            tag="blue",
+        )
 
     log = Goober.utils.Logger()
     log.setFormatter(formatter)

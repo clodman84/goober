@@ -89,6 +89,8 @@ class Node(ABC, metaclass=TimedMeta):
             label="Close",
             callback=self.delete,
             parent=self.status_group,
+            width=50,
+            height=18,
         )
 
         self.processing_time = dpg.add_text("", parent=self.status_group)

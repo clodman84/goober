@@ -27,81 +27,44 @@ class ColourBalance(Node):
         )
         with dpg.group(parent=self.image_attribute, width=200, height=250):
             dpg.add_text("Shadows")
-            # TODO: replace these with colourmap_sliders
-            self.red_shadows = dpg.add_slider_int(
-                label="Red",
-                default_value=0,
-                callback=self.update,
-                width=150,
-                min_value=-100,
-                max_value=100,
+            self.red_shadows = dpg.add_colormap_slider(
+                default_value=0.5, callback=self.update, width=170
             )
-            self.green_shadows = dpg.add_slider_int(
-                label="Green",
-                default_value=0,
-                callback=self.update,
-                width=150,
-                min_value=-100,
-                max_value=100,
+            dpg.bind_colormap(self.red_shadows, "red")
+            self.green_shadows = dpg.add_colormap_slider(
+                default_value=0.5, callback=self.update, width=170
             )
-            self.blue_shadows = dpg.add_slider_int(
-                label="Blue",
-                default_value=0,
-                callback=self.update,
-                width=150,
-                min_value=-100,
-                max_value=100,
+            dpg.bind_colormap(self.green_shadows, "green")
+            self.blue_shadows = dpg.add_colormap_slider(
+                default_value=0.5, callback=self.update, width=170
             )
+            dpg.bind_colormap(self.blue_shadows, "blue")
             dpg.add_text("Midtones")
-            self.red_midtones = dpg.add_slider_int(
-                label="Red",
-                default_value=0,
-                callback=self.update,
-                width=150,
-                min_value=-100,
-                max_value=100,
+            self.red_midtones = dpg.add_colormap_slider(
+                default_value=0.5, callback=self.update, width=170
             )
-            self.green_midtones = dpg.add_slider_int(
-                label="Green",
-                default_value=0,
-                callback=self.update,
-                width=150,
-                min_value=-100,
-                max_value=100,
+            dpg.bind_colormap(self.red_midtones, "red")
+            self.green_midtones = dpg.add_colormap_slider(
+                default_value=0.5, callback=self.update, width=170
             )
-            self.blue_midtones = dpg.add_slider_int(
-                label="Blue",
-                default_value=0,
-                callback=self.update,
-                width=150,
-                min_value=-100,
-                max_value=100,
+            dpg.bind_colormap(self.green_midtones, "green")
+            self.blue_midtones = dpg.add_colormap_slider(
+                default_value=0.5, callback=self.update, width=170
             )
+            dpg.bind_colormap(self.blue_midtones, "blue")
             dpg.add_text("Highlights")
-            self.red_highlights = dpg.add_slider_int(
-                label="Red",
-                default_value=0,
-                callback=self.update,
-                width=150,
-                min_value=-100,
-                max_value=100,
+            self.red_highlights = dpg.add_colormap_slider(
+                default_value=0.5, callback=self.update, width=170
             )
-            self.green_highlights = dpg.add_slider_int(
-                label="Green",
-                default_value=0,
-                callback=self.update,
-                width=150,
-                min_value=-100,
-                max_value=100,
+            dpg.bind_colormap(self.red_highlights, "red")
+            self.green_highlights = dpg.add_colormap_slider(
+                default_value=0.5, callback=self.update, width=170
             )
-            self.blue_highlights = dpg.add_slider_int(
-                label="Blue",
-                default_value=0,
-                callback=self.update,
-                width=150,
-                min_value=-100,
-                max_value=100,
+            dpg.bind_colormap(self.green_highlights, "green")
+            self.blue_highlights = dpg.add_colormap_slider(
+                default_value=0.5, callback=self.update, width=170
             )
+            dpg.bind_colormap(self.blue_highlights, "blue")
             self.preserve_luminance = dpg.add_checkbox(
                 label="Preserve Luminance", callback=self.update
             )
@@ -122,17 +85,17 @@ class ColourBalance(Node):
             image: Image = edge.data
             preserve = dpg.get_value(self.preserve_luminance)
 
-            dr_s = dpg.get_value(self.red_shadows)
-            dg_s = dpg.get_value(self.green_shadows)
-            db_s = dpg.get_value(self.blue_shadows)
+            dr_s = int(dpg.get_value(self.red_shadows) * 200 - 100)
+            dg_s = int(dpg.get_value(self.green_shadows) * 200 - 100)
+            db_s = int(dpg.get_value(self.blue_shadows) * 200 - 100)
 
-            dr_m = dpg.get_value(self.red_midtones)
-            dg_m = dpg.get_value(self.green_midtones)
-            db_m = dpg.get_value(self.blue_midtones)
+            dr_m = int(dpg.get_value(self.red_midtones) * 200 - 100)
+            dg_m = int(dpg.get_value(self.green_midtones) * 200 - 100)
+            db_m = int(dpg.get_value(self.blue_midtones) * 200 - 100)
 
-            dr_h = dpg.get_value(self.red_highlights)
-            dg_h = dpg.get_value(self.green_highlights)
-            db_h = dpg.get_value(self.blue_highlights)
+            dr_h = int(dpg.get_value(self.red_highlights) * 200 - 100)
+            dg_h = int(dpg.get_value(self.green_highlights) * 200 - 100)
+            db_h = int(dpg.get_value(self.blue_highlights) * 200 - 100)
 
             updated_image = colour_balance(
                 image.raw_image,
