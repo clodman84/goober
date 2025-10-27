@@ -8,6 +8,7 @@ import dearpygui.dearpygui as dpg
 
 import Goober.Nodes as Nodes
 from Goober.Core import ImageManager
+from Goober.Nodes.graph_abc import Edge
 
 logger = logging.getLogger("GUI.Editor")
 
@@ -79,13 +80,50 @@ class EditingWindow:
         edge.connect()
 
     def delink(self, sender, app_data):
-        edge = self.edge_lookup_by_edge_id[app_data]
+        edge: Edge = self.edge_lookup_by_edge_id[app_data]
         edge.disconnect()
         self.adjacency_list[edge.input].remove(edge.output)
+        self.edge_lookup_by_edge_id.pop(edge.id)
+
+    def delete_node(self, node):
+        incoming = [e for edges in node.input_attributes.values() for e in edges]
+        outgoing = [e for edges in node.output_attributes.values() for e in edges]
+
+        # If exactly one input and one output, remember the nodes for reconnection
+        reconnect = None
+        if len(incoming) == 1 and len(outgoing) == 1:
+            a = incoming[0].input  # Upstream node
+            c = outgoing[0].output  # Downstream node
+            reconnect = (a, c)
+
+        # Delink all connected edges
+        for edge in incoming + outgoing:
+            edge_id = edge.id
+            if edge_id in self.edge_lookup_by_edge_id:
+                self.delink(self.node_editor, edge_id)
+                self.edge_lookup_by_edge_id.pop(edge_id, None)
+
+        # Reconnect A -> C if valid
+        if reconnect:
+            a, c = reconnect
+            if a.output_attributes and c.input_attributes and a is not c:
+                self.link(
+                    self.node_editor,
+                    (next(iter(a.output_attributes)), next(iter(c.input_attributes))),
+                )
+
+        self.adjacency_list.pop(node, None)
+        for adj in self.adjacency_list.values():
+            if node in adj:
+                adj.remove(node)
+
+        for attr_id in itertools.chain(node.input_attributes, node.output_attributes):
+            self.node_lookup_by_attribute_id.pop(attr_id, None)
 
     def add_node(self, node: Nodes.Node):
         for attribute in itertools.chain(node.input_attributes, node.output_attributes):
             self.node_lookup_by_attribute_id[attribute] = node
+        node.delete_hook = lambda: self.delete_node(node)
         self.adjacency_list[node] = []
 
     def add_rgb_splitter_node(self):

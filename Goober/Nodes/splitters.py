@@ -29,29 +29,28 @@ class Splitter(Node):
         self.channel_histogram = {}
         self.channel_outs = {}
 
-        with dpg.child_window(parent=self.image_attribute, width=200, height=200):
-            with dpg.plot(height=-1, width=-1):
-                dpg.add_plot_axis(dpg.mvXAxis, label="Value", no_label=True)
-                dpg.add_plot_axis(
-                    dpg.mvYAxis,
-                    label="Count",
-                    tag=f"{self.id}_yaxis",
-                    no_label=True,
-                    auto_fit=True,
-                    no_tick_labels=True,
+        with dpg.plot(height=200, width=200, parent=self.image_attribute):
+            dpg.add_plot_axis(dpg.mvXAxis, label="Value", no_label=True)
+            dpg.add_plot_axis(
+                dpg.mvYAxis,
+                label="Count",
+                tag=f"{self.id}_yaxis",
+                no_label=True,
+                auto_fit=True,
+                no_tick_labels=True,
+            )
+            for channel in self.channel_labels:
+                line = dpg.add_line_series(
+                    list(range(256)),
+                    [
+                        0.0,
+                    ]
+                    * 256,
+                    parent=f"{self.id}_yaxis",
+                    label=channel,
                 )
-                for channel in self.channel_labels:
-                    line = dpg.add_line_series(
-                        list(range(256)),
-                        [
-                            0.0,
-                        ]
-                        * 256,
-                        parent=f"{self.id}_yaxis",
-                        label=channel,
-                    )
-                    self.channel_histogram[channel] = line
-                    dpg.add_plot_legend()
+                self.channel_histogram[channel] = line
+                dpg.add_plot_legend()
 
         for channel in self.channel_labels:
             attr = self.add_attribute(

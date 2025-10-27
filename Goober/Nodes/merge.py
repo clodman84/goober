@@ -18,8 +18,9 @@ class Merge(Node):
         self.image_output_attribute = self.add_attribute(
             label="Out", attribute_type=dpg.mvNode_Attr_Output
         )
-        with dpg.child_window(width=100, height=100, parent=self.image_attribute):
-            dpg.add_text("Merely adds channels together", wrap=40)
+        dpg.add_text(
+            "Merely adds channels together", wrap=100, parent=self.image_attribute
+        )
 
     def process(self, is_final=False):
         super().process(is_final)

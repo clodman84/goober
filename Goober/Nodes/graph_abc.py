@@ -73,7 +73,11 @@ class Node(ABC, metaclass=TimedMeta):
     """
 
     def __init__(
-        self, label: str, parent: str | int, update_hook: Callable = lambda: None
+        self,
+        label: str,
+        parent: str | int,
+        update_hook: Callable = lambda: None,
+        delete_hook: Callable = lambda: None,
     ):
         self.id = dpg.add_node(label=label, parent=parent)
         static = dpg.add_node_attribute(
@@ -94,10 +98,12 @@ class Node(ABC, metaclass=TimedMeta):
         self.input_attributes: dict[str | int, list[Edge]] = {}
         self.output_attributes: dict[str | int, list[Edge]] = {}
         self.update_hook = update_hook
+        self.delete_hook = delete_hook
         self.state: Literal[0, 1] = 0
 
     def delete(self):
-        pass
+        self.delete_hook()
+        dpg.delete_item(self.id)
 
     @abstractmethod
     @update_exec_time
