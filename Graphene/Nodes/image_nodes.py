@@ -3,7 +3,7 @@ from typing import Callable
 
 import dearpygui.dearpygui as dpg
 
-from Goober.Core import Image
+from Graphene.Core import Image
 
 from .graph_abc import Node
 

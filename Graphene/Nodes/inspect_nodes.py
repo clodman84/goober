@@ -6,7 +6,7 @@ from typing import Callable
 import dearpygui.dearpygui as dpg
 from line_profiler import profile
 
-from Goober.Core import Image, get_histogram
+from Graphene.Core import Image, get_histogram
 
 from .graph_abc import Node, Edge, InspectNode
 

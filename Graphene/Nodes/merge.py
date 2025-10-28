@@ -3,8 +3,8 @@ from typing import Callable
 
 from dearpygui import dearpygui as dpg
 
-from Goober.Core import Image, merge
-from Goober.Nodes import Node
+from Graphene.Core import Image, merge
+from Graphene.Nodes import Node
 
 logger = logging.getLogger("GUI.Merge")
 

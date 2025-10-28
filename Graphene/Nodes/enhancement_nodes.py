@@ -5,7 +5,7 @@ import dearpygui.dearpygui as dpg
 from PIL import ImageEnhance
 from line_profiler import profile
 
-from Goober.Core import Image
+from Graphene.Core import Image
 
 from .graph_abc import Node
 

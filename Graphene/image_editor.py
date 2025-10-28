@@ -6,9 +6,9 @@ from line_profiler import profile
 
 import dearpygui.dearpygui as dpg
 
-import Goober.Nodes as Nodes
-from Goober.Core import ImageManager
-from Goober.Nodes.graph_abc import Edge
+import Graphene.Nodes as Nodes
+from Graphene.Core import ImageManager
+from Graphene.Nodes.graph_abc import Edge
 
 logger = logging.getLogger("GUI.Editor")
 

@@ -4,7 +4,7 @@ from typing import Callable
 import dearpygui.dearpygui as dpg
 from line_profiler import profile
 
-from Goober.Core import Image, colour_balance
+from Graphene.Core import Image, colour_balance
 
 from .graph_abc import Node
 

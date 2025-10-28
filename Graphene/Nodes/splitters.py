@@ -4,8 +4,8 @@ from typing import Callable
 from dearpygui import dearpygui as dpg
 from PIL import Image as PImage
 
-from Goober.Core import Image, split_rgb, split_smh
-from Goober.Nodes import Node
+from Graphene.Core import Image, split_rgb, split_smh
+from Graphene.Nodes import Node
 
 logger = logging.getLogger("GUI.Splitter")
 

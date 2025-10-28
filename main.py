@@ -5,8 +5,8 @@ import dearpygui.dearpygui as dpg
 from dearpygui import demo
 from themes import create_gruvbox_dark_theme
 
-import Goober.image_editor
-import Goober.utils
+import Graphene.image_editor
+import Graphene.utils
 
 logger = logging.getLogger("Core.Main")
 import dearpygui.dearpygui as dpg
@@ -36,7 +36,7 @@ def main():
                 dpg.add_menu_item(label="Show GUI Demo", callback=demo.show_demo)
                 dpg.add_menu_item(
                     label="Spawn Image Editor",
-                    callback=lambda: Goober.image_editor.EditingWindow(
+                    callback=lambda: Graphene.image_editor.EditingWindow(
                         [i for i in Path("./Data/18R/").iterdir()]
                     ),
                 )
@@ -60,7 +60,7 @@ def main():
             tag="blue",
         )
 
-    log = Goober.utils.Logger()
+    log = Graphene.utils.Logger()
     log.setFormatter(formatter)
     core_logger.addHandler(log)
     gui_logger.addHandler(log)

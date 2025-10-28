@@ -8,7 +8,7 @@ from typing import Any, Callable, Literal
 
 import dearpygui.dearpygui as dpg
 
-from Goober.Core import natural_time
+from Graphene.Core import natural_time
 
 logger = logging.getLogger("GUI.GraphABC")
 

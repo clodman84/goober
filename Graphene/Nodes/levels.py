@@ -5,7 +5,7 @@ from typing import Callable
 import dearpygui.dearpygui as dpg
 from line_profiler import profile
 
-from Goober.Core import Image, get_rgb_histogram, levels
+from Graphene.Core import Image, get_rgb_histogram, levels
 
 from .graph_abc import Node
 
