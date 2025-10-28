@@ -14,6 +14,7 @@ import dearpygui.dearpygui as dpg
 
 def main():
     dpg.create_context()
+    create_gruvbox_dark_theme()
     dpg.create_viewport(title="ShittyLightroom")
     core_logger = logging.getLogger("Core")
     gui_logger = logging.getLogger("GUI")
@@ -30,10 +31,6 @@ def main():
             with dpg.menu(label="Tools"):
                 dpg.add_menu_item(
                     label="Show Performance Metrics", callback=dpg.show_metrics
-                )
-                dpg.add_menu_item(
-                    label="Irreversible Experimental Theme",
-                    callback=create_gruvbox_dark_theme,
                 )
             with dpg.menu(label="Dev"):
                 dpg.add_menu_item(label="Show GUI Demo", callback=demo.show_demo)

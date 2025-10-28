@@ -1,4 +1,5 @@
 from dearpygui import dearpygui as dpg
+import pathlib
 
 
 def create_gruvbox_dark_theme():
@@ -6,6 +7,12 @@ def create_gruvbox_dark_theme():
     Clean Gruvbox Dark theme with muted blues, greens, and yellows.
     Properly uses category parameters for consistent theming.
     """
+
+    # add a font registry
+    with dpg.font_registry():
+        # first argument ids the path to the .ttf or .otf file
+        font = dpg.add_font("./Fonts/Quantico-Regular.ttf", 20)
+        dpg.bind_font(font)
 
     # Core Gruvbox palette
     BG_DARK = (29, 32, 33, 255)
